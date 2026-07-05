@@ -1,6 +1,6 @@
 <img src="github/images/ViseBanner.png" alt="" width="100%">
 
-<h1 align="center">Vise, a Icon Tool and Designer inside and for Roblox Studio</h1>
+<h1 align="center">Vise, a Icon Tool and Designer for Roblox Studio</h1>
 
 <div align="center">
 
