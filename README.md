@@ -37,6 +37,8 @@ ___
 
 <h1 align="center"><img src="github/images/Camera.png" width="7%" align="center"> License & Holder Agreement</h1>
 
-Vise is available under the <kbd>MPL-3.0 License <img src="https://cdn.simpleicons.org/opensourceinitiative/000/fff" width="15" /></kbd>. Terms and conditions are available in [LICENSE](https://github.com/J4KEWasNotHere/Vise/blob/main/LICENSE) or at the [Official Website](https://opensource.org/license/gpl-3.0). Any public reproduction, replication, or forking of this resource requires the application of this same license and strict adherence to its governing legislation.
+Vise is available under the <kbd>MPL-3.0 License <img src="https://cdn.simpleicons.org/opensourceinitiative/000/fff" width="15" /></kbd>. Terms and conditions are available in [LICENSE](https://github.com/J4KEWasNotHere/Vise/blob/main/LICENSE) or at the [Official Website](https://opensource.org/license/gpl-3.0). 
+
+<b>Any public reproduction, replication, or forking of this resource requires the application of this same license and strict adherence to its governing legislation.</b>
 
 <div align="center"><a href="https://www.roblox.com/communities/34077341/Kalaran#!/about"><img src="github/images/KalaranBanner.png" alt="" width="50%"></a></div>
