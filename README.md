@@ -35,7 +35,7 @@ ____
 
 ___
 
-<h1 align="center"><img src="github/images/Camera.png" width="7%" align="center"> License & Holder Agreement</h1>
+<h1 align="center"><img src="github/images/Camera.png" width="10%" align="center"> License & Holder Agreement</h1>
 
 Vise is available under the <kbd>MPL-3.0 License <img src="https://cdn.simpleicons.org/opensourceinitiative/000/fff" width="15" /></kbd>. Terms and conditions are available in [LICENSE](https://github.com/J4KEWasNotHere/Vise/blob/main/LICENSE) or at the [Official Website](https://opensource.org/license/gpl-3.0). 
 
