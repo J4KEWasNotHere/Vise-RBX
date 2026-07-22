@@ -1,0 +1,253 @@
+--!strict
+--!nolint DeprecatedApi
+
+local RunService = game:GetService("RunService") :: RunService
+
+local Future = require(script.Parent.Future)
+local Trove = require(script.Parent.Trove)
+
+local Bootstrap = require(script.Bootstrap)
+
+local MODULE_REFS_FOLDER = Bootstrap.createRefs()
+local IS_EDIT_MODE = Bootstrap.isEditMode()
+
+-- Class
+
+local ParallelStatic = {}
+
+local ParallelPrivate = {}
+
+local ParallelClass = {}
+ParallelClass.__index = ParallelClass
+ParallelClass.ClassName = "Parallel"
+
+export type Required<T..., U...> = {
+	script: ModuleScript,
+	typecast: (T...) -> U...,
+}
+
+export type Parallel<T..., U...> = typeof(setmetatable(
+	{} :: {
+		trove: Trove.Trove,
+
+		ticket: number,
+
+		nActors: number,
+		required: Required<T..., U...>,
+
+		template: Script,
+		moduleRef: ObjectValue,
+
+		binding: BindableEvent,
+		isReadyFuture: Future.Future<()>,
+		isWorkingFuture: Future.Future<()>,
+
+		working: {
+			cancelled: boolean,
+			futures: { [number]: Future.Future<() -> U...> },
+		}?,
+
+		actorEntries: {
+			{
+				actor: Actor,
+				scheduled: { () -> T... },
+			}
+		},
+	},
+	ParallelClass
+))
+
+function ParallelStatic.new<T..., U...>(n: number, required: Required<T..., U...>)
+	local self = setmetatable({}, ParallelClass) :: Parallel<T..., U...>
+
+	self.trove = Trove.new()
+
+	self.ticket = 0
+	self.nActors = n
+	self.required = required
+
+	self.isWorkingFuture = Future.completed()
+
+	local template = script.ClientWorker
+	local parent: Instance = MODULE_REFS_FOLDER
+	if script:FindFirstAncestorWhichIsA("Plugin") then
+		template = script.PluginWorker
+	elseif IS_EDIT_MODE then
+		-- selene: allow(undefined_variable)
+		local tmpPlugin = PluginManager():CreatePlugin()
+		self.trove:Add(tmpPlugin)
+		template = script.PluginWorker
+		parent = tmpPlugin
+	elseif RunService:IsServer() then
+		template = script.ServerWorker
+	end
+
+	self.template = template
+
+	local moduleRef = Instance.new("ObjectValue")
+	moduleRef.Name = `Parallel_{required.script.Name}`
+	moduleRef.Value = required.script
+	moduleRef.Archivable = false
+	moduleRef.Parent = parent
+	self.trove:Add(moduleRef)
+	self.moduleRef = moduleRef
+
+	self.binding = Instance.new("BindableEvent")
+	self.binding.Name = "Binding"
+	self.binding.Parent = moduleRef
+	self.trove:Add(self.binding)
+
+	ParallelPrivate.buildActors(self)
+
+	return self
+end
+
+-- Private
+
+function ParallelPrivate.buildActors<T..., U...>(self: Parallel<T..., U...>)
+	local isReadyFuture = Future.new()
+
+	self.isReadyFuture = isReadyFuture
+	self.actorEntries = {}
+
+	for i = 1, self.nActors do
+		local actor = Instance.new("Actor")
+		actor.Name = tostring(i)
+		actor.Parent = self.moduleRef
+
+		local worker = self.template:Clone()
+		worker.Enabled = true
+		worker.Parent = actor
+
+		self.actorEntries[i] = {
+			actor = actor,
+			scheduled = {},
+		}
+	end
+
+	local actorEntries = self.actorEntries
+	task.spawn(function()
+		for _, actorEntry in actorEntries do
+			while not actorEntry.actor:GetAttribute("IsReady") do
+				actorEntry.actor:GetAttributeChangedSignal("IsReady"):Wait()
+			end
+		end
+
+		isReadyFuture:complete()
+	end)
+end
+
+-- Public
+
+function ParallelClass.isWorking<T..., U...>(self: Parallel<T..., U...>)
+	return not self.isWorkingFuture:isCompleted()
+end
+
+function ParallelClass.waitForReady<T..., U...>(self: Parallel<T..., U...>)
+	self.isReadyFuture:expect()
+	self.isWorkingFuture:expect()
+end
+
+function ParallelClass.getActorCount<T..., U...>(self: Parallel<T..., U...>)
+	return #self.actorEntries
+end
+
+function ParallelClass.schedule<T..., U...>(self: Parallel<T..., U...>, ...: T...)
+	assert(self.isReadyFuture:isCompleted(), "Not ready!")
+
+	self.ticket = self.ticket + 1
+	local myTicket = self.ticket
+
+	local actorIndex = ((myTicket - 1) % #self.actorEntries) + 1
+	local actorEntry = self.actorEntries[actorIndex]
+
+	table.insert(actorEntry.scheduled, Future.packAsCallback(...))
+end
+
+function ParallelClass.clear<T..., U...>(self: Parallel<T..., U...>)
+	assert(self.isReadyFuture:isCompleted(), "Not ready!")
+
+	self.ticket = 0
+	for _, actorEntry in self.actorEntries do
+		table.clear(actorEntry.scheduled)
+	end
+end
+
+function ParallelClass.workAsync<T..., U...>(self: Parallel<T..., U...>, context: ("parallel" | "serial")?)
+	assert(self.isReadyFuture:isCompleted(), "Not ready!")
+	assert(not self:isWorking(), "Already working!")
+	self.isWorkingFuture = Future.new()
+
+	local futures = {}
+	local connection = self.binding.Event:Connect(function(k: number, success: boolean, ...)
+		if success then
+			futures[k]:complete(Future.packAsCallback(...))
+		else
+			local err: string = ...
+			futures[k]:complete(function()
+				error("\n" .. err, 2)
+			end)
+		end
+	end)
+
+	local msg = if context == "serial" then "workSerial" else "workParallel"
+	for i, actorEntry in self.actorEntries do
+		for j, unpackArgs in actorEntry.scheduled do
+			local k = ((j - 1) * #self.actorEntries) + i
+			futures[k] = Future.new()
+			actorEntry.actor:SendMessage(msg, k, unpackArgs())
+		end
+	end
+
+	self:clear()
+
+	local working = {
+		cancelled = false,
+		futures = futures,
+	}
+
+	self.working = working
+
+	local results = {}
+	for i, future in futures do
+		local castedFuture = (future :: any) :: Future.Future<() -> U...>
+		results[i] = castedFuture:expect()
+	end
+
+	connection:Disconnect()
+
+	self.working = nil
+	self.isWorkingFuture:complete()
+	return results, working.cancelled
+end
+
+function ParallelClass.cancelWork<T..., U...>(self: Parallel<T..., U...>)
+	local working = self.working
+
+	if working then
+		for _, actorEntry in self.actorEntries do
+			actorEntry.actor:Destroy()
+		end
+
+		ParallelPrivate.buildActors(self)
+		working.cancelled = true
+
+		for _, future in working.futures do
+			local castedFuture = (future :: any) :: Future.Future<() -> U...>
+			if not castedFuture:isCompleted() then
+				castedFuture:complete(function()
+					error("Work was cancelled", 2)
+				end)
+			end
+		end
+	end
+end
+
+function ParallelClass.Destroy<T..., U...>(self: Parallel<T..., U...>)
+	self.trove:Destroy()
+	self.actorEntries = {}
+end
+
+--
+
+return ParallelStatic
