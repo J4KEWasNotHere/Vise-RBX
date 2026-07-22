@@ -1,0 +1,18 @@
+[package]
+name = "egomoose/parallel"
+description = "An abstraction layer for actor-based parallel execution on Roblox."
+repository = "https://github.com/EgoMoose/rbx-parallel"
+version = "0.3.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+license = "MIT"
+exclude = ["**"]
+include = ["src", "src/**", "wally.toml", "wally.lock", "default.project.json", "LICENSE"]
+
+[dependencies]
+Trove = "sleitnick/trove@=1.5.1"
+Future = "egomoose/future@1.0.0"
+
+[dev-dependencies]
+Jest = "jsdotlua/jest@3.10.0"
+JestGlobals = "jsdotlua/jest-globals@3.10.0"

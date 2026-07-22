@@ -1,0 +1,9 @@
+{
+  "globIgnorePaths": [
+    "**/*.spec.luau"
+  ],
+  "name": "future",
+  "tree": {
+    "$path": "src"
+  }
+}

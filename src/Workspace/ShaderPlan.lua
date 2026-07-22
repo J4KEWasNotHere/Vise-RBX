@@ -95,6 +95,4 @@ return fragment
 
 ]]
 
-
-
-local a : Vector2
+local a: Vector2
