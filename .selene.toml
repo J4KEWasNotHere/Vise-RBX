@@ -1,0 +1,9 @@
+std = "roblox"
+
+[lints]
+
+[rules]
+incorrect_standard_library_use
+unused_variable = "warn"
+
+[config]

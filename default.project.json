@@ -3,30 +3,23 @@
   "tree": {
     "$className": "DataModel",
 
+    "MaterialService": {
+      "$path": "src/MaterialService"
+    },
+
     "ReplicatedStorage": {
-      "Shared": {
-        "$path": "src/shared"
-      }
+      "$path": "src/ReplicatedStorage"
     },
 
-    "ServerScriptService": {
-      "Server": {
-        "$path": "src/server"
-      }
-    },
-
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "Client": {
-          "$path": "src/client"
-        }
-      }
+    "StarterGui": {
+      "$path": "src/StarterGui"
     },
 
     "Workspace": {
       "$properties": {
         "FilteringEnabled": true
       },
+      "$path": "src/Workspace",
       "Baseplate": {
         "$className": "Part",
         "$properties": {
