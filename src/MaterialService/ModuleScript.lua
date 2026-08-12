@@ -1,3 +1,0 @@
-local shader = {}
-
-return shader

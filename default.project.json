@@ -4,11 +4,6 @@
     "$ignoreUnknownInstances": true,
     "$className": "DataModel",
 
-    "MaterialService": {
-      "$ignoreUnknownInstances": true,
-      "$path": "src/MaterialService"
-    },
-
     "ReplicatedStorage": {
       "$ignoreUnknownInstances": true,
       "$path": "src/ReplicatedStorage"
@@ -16,17 +11,16 @@
 
     "StarterGui": {
       "$ignoreUnknownInstances": true,
-      "$path": "src/StarterGui"
-    },
+      "$path": "src/StarterGui",
 
-    "Workspace": {
-      "$ignoreUnknownInstances": true,
-      "$properties": {
-        "FilteringEnabled": true
+      "Packages" : {
+        "$className":"Folder",
+        "$path": "Packages",
+        "$ignoreUnknownInstances": true
       }
     },
 
-    "Lighting": {
+    "Workspace": {
       "$ignoreUnknownInstances": true
     }
   }
