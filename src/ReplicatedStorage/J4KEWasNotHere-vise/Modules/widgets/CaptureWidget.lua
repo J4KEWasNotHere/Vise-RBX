@@ -40,6 +40,8 @@ function CaptureWidget:Bind(ctx: Types.ctx, toolbarButton, pluginRoot, pluginIns
 	-- Widget
 
 	AddWidget({
+		Name = `Capture | {Constants.NameId}`,
+
 		Enabled = widgetsEnabled,
 		InitialDockTo = Enum.InitialDockState.Float,
 		FloatingSize = Vector2.new(400, 260),
@@ -48,6 +50,10 @@ function CaptureWidget:Bind(ctx: Types.ctx, toolbarButton, pluginRoot, pluginIns
 		Children = { -- do not replace with [Children]
 		},
 	})
+
+	toolbarButton.Click:Connect(function()
+		widgetsEnabled:set(not widgetsEnabled:get())
+	end)
 
 	return function()
 		widgetsEnabled:set(false)

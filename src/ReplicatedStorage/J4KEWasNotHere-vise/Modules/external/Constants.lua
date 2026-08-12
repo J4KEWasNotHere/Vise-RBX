@@ -1,7 +1,3 @@
---!strict
-
-local Constants = {}
-
 -- Services
 local HttpService = game:GetService("HttpService")
 
@@ -26,7 +22,7 @@ local LimitedTextInput = require("../../Components/StudioComponents/LimitedTextI
 local ProgressBar = require("../../Components/StudioComponents/ProgressBar")
 local Slider = require("../../Components/StudioComponents/Slider")
 
-local Fusion = require("../../Packages/Fusion")
+local Fusion = require("../../Packages/_Index/elttob_fusion@0.2.0/fusion") -- explict
 local New = Fusion.New
 local Value = Fusion.Value
 local Children = Fusion.Children
@@ -34,6 +30,7 @@ local OnChange = Fusion.OnChange
 local OnEvent = Fusion.OnEvent
 local Observer = Fusion.Observer
 local Computed = Fusion.Computed
+
 local unwrap = require("../../Components/StudioComponents/Util/unwrap")
 
 local ctx = {
@@ -170,14 +167,17 @@ local ctx = {
 			})
 		end,
 	},
-	modules = {
-		Constants = Constants,
-	},
 }
 
-Constants.Version = "0.1.0"
-Constants.VersionTip = "-alpha"
+local Constants = {
+	-- public
+	Version = "0.1.0",
+	VersionTip = "-alpha",
 
-Constants._context = ctx
+	-- internal
+	_context = ctx,
+}
+
+Constants.NameId = `Vise-{Constants.Version}{Constants.VersionTip}`
 
 return Constants

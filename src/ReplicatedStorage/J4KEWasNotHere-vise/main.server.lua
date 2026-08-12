@@ -9,17 +9,17 @@ local RunService = game:GetService("RunService")
 
 -- Setup
 
-local pluginRoot = script.Parent
-local toolbar = plugin:CreateToolbar("Vise")
+const pluginRoot = script.Parent
+const toolbar = plugin:CreateToolbar("Vise")
 
 -- Create toolbar buttons
-local captureButton = toolbar:CreateButton("Capture", "Capture screenshot of the viewport.", "")
+const captureButton = toolbar:CreateButton("Capture", "Capture a screenshot of the viewport.", "")
 captureButton.ClickableWhenViewportHidden = false
 
-local iconMakerButton = toolbar:CreateButton("Designer", "Edit your existing screenshots.", "")
+const iconMakerButton = toolbar:CreateButton("Designer", "Edit your existing Vise screenshots.", "")
 iconMakerButton.ClickableWhenViewportHidden = true
 
-local shaderEditButton = toolbar:CreateButton("Shaders", "Create a shader for vise.", "")
+const shaderEditButton = toolbar:CreateButton("Shaders", "Create shaders to use in Vise.", "")
 shaderEditButton.ClickableWhenViewportHidden = true
 
 -- Resources
@@ -29,7 +29,7 @@ local ctx = Constants._context
 -- Variables
 --local CaptureWidget = require("./Modules/widgets/CaptureWidget")
 
-local ToBind = {
+const ToBind = {
 	{
 		module = require("./Modules/widgets/CaptureWidget"),
 		toolbar = captureButton,
