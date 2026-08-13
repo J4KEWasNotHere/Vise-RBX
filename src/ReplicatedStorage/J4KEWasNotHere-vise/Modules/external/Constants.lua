@@ -1,5 +1,6 @@
 -- Services
 local HttpService = game:GetService("HttpService")
+local LocalizationService = game:GetService("LocalizationService")
 
 -- Context
 local Widget = require("../../Components/PluginComponents/Widget")
@@ -30,11 +31,47 @@ local OnChange = Fusion.OnChange
 local OnEvent = Fusion.OnEvent
 local Observer = Fusion.Observer
 local Computed = Fusion.Computed
+local Hydrate = Fusion.Hydrate
+local Cleanup = Fusion.Cleanup
+local cleanup = Fusion.cleanup
 
 local unwrap = require("../../Components/StudioComponents/Util/unwrap")
 
+local function makeCard(props)
+	local y: NumberRange? = props.YScaling
+	local padding = props.Padding or 10
+
+	return New("Frame")({
+		Size = UDim2.fromScale(1, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = props.Transparency or 0.7,
+		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		BorderSizePixel = 0,
+		[Children] = {
+			New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
+			New("UIPadding")({
+				PaddingLeft = UDim.new(0, props.XPadding or padding),
+				PaddingRight = UDim.new(0, props.XPadding or padding),
+				PaddingTop = UDim.new(0, props.YPadding or padding),
+				PaddingBottom = UDim.new(0, props.YPadding or padding),
+			}),
+			New("UIListLayout")({
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				Padding = UDim.new(0, 8),
+			}),
+			New("UISizeConstraint")({
+				MaxSize = Vector2.new(9999, y and y.Max or 9999),
+				MinSize = Vector2.new(0, y and y.Min or 0),
+			}),
+			props.Children,
+		},
+	})
+end
+
 local ctx = {
 	fusion = {
+		Hydrate = Hydrate,
+
 		New = New,
 		Value = Value,
 		Children = Children,
@@ -42,6 +79,8 @@ local ctx = {
 		OnEvent = OnEvent,
 		Observer = Observer,
 		Computed = Computed,
+		Cleanup = Cleanup,
+		cleanup = cleanup,
 		unwrap = unwrap,
 	},
 
@@ -105,33 +144,26 @@ local ctx = {
 	},
 
 	ui = {
-		makeCard = function(contents, y: NumberRange?)
-			return New("Frame")({
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 0.7,
-				BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-				BorderSizePixel = 0,
-				[Children] = {
-					New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
-					New("UIPadding")({
-						PaddingLeft = UDim.new(0, 10),
-						PaddingRight = UDim.new(0, 10),
-						PaddingTop = UDim.new(0, 10),
-						PaddingBottom = UDim.new(0, 10),
+		Collapsible = function(props)
+			return makeCard({
+				Padding = 0,
+
+				Children = VerticalCollapsibleSection({
+					Text = props.Text,
+					Collapsed = props.Collapsed,
+					Enabled = props.Enabled,
+					Padding = UDim.new(0, props.Padding or 4),
+
+					[Children] = makeCard({
+						Transparency = 1,
+						Padding = props.Padding or 4,
+						Children = props.Children,
 					}),
-					New("UIListLayout")({
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 8),
-					}),
-					New("UISizeConstraint")({
-						MaxSize = Vector2.new(9999, y and y.Max or 9999),
-						MinSize = Vector2.new(0, y and y.Min or 0),
-					}),
-					table.unpack(contents),
-				},
+				}),
 			})
 		end,
+
+		makeCard = makeCard,
 
 		makeSectionHeader = function(text)
 			return Label({
@@ -167,7 +199,13 @@ local ctx = {
 			})
 		end,
 	},
+
+	modules = {
+		Trove = require("../../Packages/Trove"),
+	},
 }
+
+-- Define
 
 local Constants = {
 	-- public

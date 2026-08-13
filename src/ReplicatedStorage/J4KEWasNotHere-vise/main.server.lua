@@ -5,12 +5,14 @@
 ]]
 
 -- Services
+local Preloaded = game:GetService("Preloaded")
 local RunService = game:GetService("RunService")
 
 -- Setup
 
 const pluginRoot = script.Parent
 const toolbar = plugin:CreateToolbar("Vise")
+local cleanedUp = false
 
 -- Create toolbar buttons
 const captureButton = toolbar:CreateButton("Capture", "Capture a screenshot of the viewport.", "")
@@ -32,9 +34,12 @@ local ctx = Constants._context
 const ToBind = {
 	{
 		module = require("./Modules/widgets/CaptureWidget"),
+		cleanup = "",
 		toolbar = captureButton,
 	},
 }
+
+local Binded = {}
 
 -- function Editor:performCapture()
 -- 	print("[Vise] Capturing image...")
@@ -48,9 +53,66 @@ const ToBind = {
 -- 	print("[Vise] Capture complete!")
 -- end
 
--- Initialize
-if RunService:IsStudio() and RunService:IsEdit() then
-	for _, data in ipairs(ToBind) do
-		data.module:Bind(ctx, data.toolbar, pluginRoot, plugin)
+-- Utility
+
+local function resolvePath(path, data)
+	if typeof(data) ~= "table" then
+		return data
 	end
+
+	local segments = string.split(path, "/")
+	local current = data
+	for _, segment in ipairs(segments) do
+		if current[segment] then
+			current = current[segment]
+		else
+			return nil
+		end
+	end
+	return current
+end
+
+-- Functions
+
+local function Cleanup()
+	cleanedUp = true
+	for _, data in ipairs(Binded) do
+		data.cleanup()
+	end
+
+	print("--- CLEANED UP ---")
+end
+
+-- Initialize
+plugin.Unloading:Connect(Cleanup)
+
+if cleanedUp then
+	return
+end
+
+print("--- STARTING PLUGIN ---")
+
+if RunService:IsStudio() and RunService:IsEdit() then
+	for i, data in ipairs(ToBind) do
+		local bind = data.module:Bind(ctx, data.toolbar, pluginRoot, plugin)
+		local cleanupFunc = data.cleanup == "" and bind or nil
+
+		if not cleanupFunc then
+			local func = resolvePath(data.cleanup, typeof(bind) == "function" and bind() or bind)
+			if func and typeof(func) == "function" then
+				cleanupFunc = func
+			end
+
+			continue -- if no cleanup is needed, just skip..
+		end
+
+		print(`Binded with cleanup at index {i}.`)
+
+		Binded[i] = {
+			bind = bind,
+			cleanup = cleanupFunc,
+		}
+	end
+
+	print("--- PLUGIN STARTED! --")
 end
