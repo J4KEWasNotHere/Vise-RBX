@@ -1,6 +1,0 @@
-[details]
-name = "Vise"
-description = "A plugin with extensible design capabilities within Studio that records instances of the workspace in real time."
-
-[versions]
-"0.0.1" = {ref = ""}
