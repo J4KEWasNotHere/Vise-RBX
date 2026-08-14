@@ -29,13 +29,21 @@ local Constants = require("./Modules/external/Constants")
 local ctx = Constants._context
 
 -- Variables
---local CaptureWidget = require("./Modules/widgets/CaptureWidget")
-
 const ToBind = {
 	{
 		module = require("./Modules/widgets/CaptureWidget"),
 		cleanup = "",
 		toolbar = captureButton,
+	},
+	{
+		module = require("./Modules/widgets/DesignerWidget"),
+		cleanup = "",
+		toolbar = iconMakerButton,
+	},
+	{
+		module = require("./Modules/widgets/ShaderWidget"),
+		cleanup = "",
+		toolbar = shaderEditButton,
 	},
 }
 

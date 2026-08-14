@@ -211,27 +211,27 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 		<Item class="Camera" referent="RBXFC9863C51DB849D8AA03017471323F19">
 			<Properties>
 				<CoordinateFrame name="CFrame">
-					<X>-3.86422443</X>
-					<Y>19.9444733</Y>
-					<Z>-30.6620865</Z>
-					<R00>-0.938165486</R00>
-					<R01>0.116079055</R01>
-					<R02>-0.326146036</R02>
-					<R10>7.45058149e-09</R10>
-					<R11>0.942108929</R11>
-					<R12>0.335307151</R12>
-					<R20>0.346187204</R20>
-					<R21>0.314573586</R21>
-					<R22>-0.883854032</R22>
+					<X>-0.43757093</X>
+					<Y>18.4156761</Y>
+					<Z>-21.4836121</Z>
+					<R00>-0.90972352</R00>
+					<R01>-0.0541414693</R01>
+					<R02>0.411669493</R02>
+					<R10>-0</R10>
+					<R11>0.991462231</R11>
+					<R12>0.130393982</R12>
+					<R20>-0.415214479</R20>
+					<R21>0.118622474</R21>
+					<R22>-0.901956558</R22>
 				</CoordinateFrame>
 				<Ref name="CameraSubject">null</Ref>
 				<token name="CameraType">0</token>
 				<float name="FieldOfView">70</float>
 				<token name="FieldOfViewMode">0</token>
 				<CoordinateFrame name="Focus">
-					<X>-3.21193242</X>
-					<Y>19.273859</Y>
-					<Z>-28.8943787</Z>
+					<X>-1.26090991</X>
+					<Y>18.1548882</Y>
+					<Z>-19.6796989</Z>
 					<R00>1</R00>
 					<R01>0</R01>
 					<R02>0</R02>
@@ -1256,7 +1256,7 @@ return shader
 				<int name="DisplayOrder">0</int>
 				<token name="SafeAreaCompatibility">1</token>
 				<token name="ScreenInsets">2</token>
-				<bool name="Enabled">true</bool>
+				<bool name="Enabled">false</bool>
 				<bool name="ResetOnSpawn">true</bool>
 				<token name="ZIndexBehavior">0</token>
 				<bool name="AutoLocalize">true</bool>
@@ -6116,717 +6116,6 @@ end]]></ProtectedString>
 					</Properties>
 				</Item>
 			</Item>
-			<Item class="LocalScript" referent="84">
-				<Properties>
-					<ProtectedString name="Source"><![CDATA[local Packages = script.Parent.Packages
-local Components = script.Parent.Components
-local Checkbox = require(Components.Checkbox)
-local MainButton = require(Components.MainButton)
-local ScrollFrame = require(Components.ScrollFrame)
-local Label = require(Components.Label)
-local LabelImage = require(Components.LabelImage)
-local Paragraph = require(Components.Paragraph)
-local TextInput = require(Components.TextInput)
-local VerticalExpandingList = require(Components.VerticalExpandingList)
-local VerticalCollapsibleSection = require(Components.VerticalCollapsibleSection)
-local Seperator = require(Components.Seperator)
-local Loading = require(Components.Loading)
-local Fusion = require(Packages.Fusion)
-
-local New = Fusion.New
-local Value = Fusion.Value
-local Children = Fusion.Children
-local OnChange = Fusion.OnChange
-local OnEvent = Fusion.OnEvent
-local Observer = Fusion.Observer
-local Computed = Fusion.Computed
-local unwrap = Fusion.unwrap
-local Ref = Fusion.Ref
-
-local function stringToTable(str: string)
-	local tbl = {}
-	for line in string.gmatch(str, "[^\r\n]+") do
-		table.insert(tbl, line)
-	end
-	return tbl
-end
-
-local function makeCard(contents, y: NumberRange?)
-	return New("Frame")({
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		BackgroundTransparency = 0.7,
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-		BorderSizePixel = 0,
-		[Children] = {
-			New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
-			New("UIPadding")({
-				PaddingLeft = UDim.new(0, 10),
-				PaddingRight = UDim.new(0, 10),
-				PaddingTop = UDim.new(0, 10),
-				PaddingBottom = UDim.new(0, 10),
-			}),
-			New("UIListLayout")({
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UDim.new(0, 8),
-			}),
-			New("UISizeConstraint")({
-				MaxSize = Vector2.new(9999, y and y.Max or 9999),
-				MinSize = Vector2.new(0, y and y.Min or 0),
-			}),
-			table.unpack(contents),
-		},
-	})
-end
-
-local ScreenGui = script.Parent
-local Frame = script.Parent.Frame
-
-local source = Value({})
-source:set(stringToTable([[@include shader_type canvas_item; -- canvas_item / spatial (3d)
-
--- defining globa variables (editable)
-@export float:var hint_range(0.0, 1.0, 0.1) = 1.0; -- floats must have decimals
-
--- defining static variables
-local world_uv: Vector2;
-const test: string = "test";
-
--- number is available but in double form
-
-float:lerp(a: float, b: float, float: float) {
-	return a + (b - a) * c;
-}
-
-nil:vertex() {
-	-- Called for every vertex the material is visible on.
-	
-	world_uv = (MODEL_MATRIX * vec4(VERTEX.xy, 0.0, 1.0)).xy / 128.0;
-}
-
-(nil):fragment() {
-	-- Called for every pixel the material is visible on.
-	center: Vector2 = Vector2.new(0, 0);
-	vec: Vector2 = UV - center;
-	
-	dist: number = math.sqrt(math.pow(vec.X, 2) + math.pow(vec.Y, 2));
-	
-	COLOR = texture(TEXTURE, UV);
-}]]))
-
-local coloredText = Value({})
-
-local textBoxRefs = {}
-
-local UserInputService = game:GetService("UserInputService")
-
-local KEYWORDS = {
-	["local"] = true, ["const"] = true, ["return"] = true, ["if"] = true,
-	["then"] = true, ["else"] = true, ["elseif"] = true, ["end"] = true,
-	["function"] = true, ["for"] = true, ["while"] = true, ["do"] = true,
-	["in"] = true, ["break"] = true, ["continue"] = true, ["repeat"] = true,
-	["until"] = true, ["and"] = true, ["or"] = true, ["not"] = true,
-	["true"] = true, ["false"] = true, ["self"] = true,
-}
-
-local TYPES = {
-	["float"] = true, ["number"] = true, ["string"] = true, ["bool"] = true,
-	["boolean"] = true, ["int"] = true, ["nil"] = true,
-	["Vector2"] = true, ["Vector3"] = true, ["Vector4"] = true,
-	["vec2"] = true, ["vec3"] = true, ["vec4"] = true,
-	["mat3"] = true, ["mat4"] = true, ["sampler2D"] = true, ["void"] = true,
-}
-
-local BUILTINS = {
-	["shader_type"] = true, ["canvas_item"] = true, ["spatial"] = true,
-	["hint_range"] = true, ["MODEL_MATRIX"] = true, ["VIEW_MATRIX"] = true,
-	["PROJECTION_MATRIX"] = true, ["VERTEX"] = true, ["UV"] = true,
-	["NORMAL"] = true, ["TEXTURE"] = true, ["COLOR"] = true,
-	["TIME"] = true, ["FRAGCOORD"] = true, ["math"] = true,
-}
-
-local COLORS = {
-	keyword = "C586C0",
-	type = "4EC9B0",
-	builtin = "DCDCAA",
-	comment = "6A9955",
-	string = "CE9178",
-	number = "B5CEA8",
-	decorator = "D16969",
-	func = "DCDCAA",
-	default = "D4D4D4",
-}
-
-local function escapeRich(s: string): string
-	s = s:gsub("&", "&amp;")
-	s = s:gsub("<", "&lt;")
-	s = s:gsub(">", "&gt;")
-	s = s:gsub('"', "&quot;")
-	return s
-end
-
-local function wrap(text: string, color: string): string
-	if text == "" then return "" end
-	return string.format('<font color="#%s">%s</font>', color, escapeRich(text))
-end
-
-local function highlightLine(line: string): string
-	local result = {}
-	local pos, len = 1, #line
-
-	while pos <= len do
-		local c = line:sub(pos, pos)
-
-		if c == " " or c == "\t" then
-			local startPos = pos
-			while pos <= len and (line:sub(pos, pos) == " " or line:sub(pos, pos) == "\t") do
-				pos += 1
-			end
-			table.insert(result, escapeRich(line:sub(startPos, pos - 1)))
-
-		elseif line:sub(pos, pos + 1) == "--" then
-			table.insert(result, wrap(line:sub(pos), COLORS.comment))
-			pos = len + 1
-
-		elseif c == '"' or c == "'" then
-			local quote = c
-			local startPos = pos
-			pos += 1
-			while pos <= len and line:sub(pos, pos) ~= quote do
-				if line:sub(pos, pos) == "\\" then pos += 1 end
-				pos += 1
-			end
-			pos = math.min(pos, len) + 1
-			table.insert(result, wrap(line:sub(startPos, pos - 1), COLORS.string))
-
-		elseif c == "@" then
-			local startPos = pos
-			pos += 1
-			while pos <= len and line:sub(pos, pos):match("[%a_]") do pos += 1 end
-			table.insert(result, wrap(line:sub(startPos, pos - 1), COLORS.decorator))
-
-		elseif c:match("%d") then
-			local startPos = pos
-			while pos <= len and line:sub(pos, pos):match("[%d%.]") do pos += 1 end
-			table.insert(result, wrap(line:sub(startPos, pos - 1), COLORS.number))
-
-		elseif c:match("[%a_]") then
-			local startPos = pos
-			while pos <= len and line:sub(pos, pos):match("[%w_]") do pos += 1 end
-			local word = line:sub(startPos, pos - 1)
-
-			local peek = pos
-			while peek <= len and line:sub(peek, peek) == " " do peek += 1 end
-			local isCall = line:sub(peek, peek) == "("
-
-			if KEYWORDS[word] then
-				table.insert(result, wrap(word, COLORS.keyword))
-			elseif TYPES[word] then
-				table.insert(result, wrap(word, COLORS.type))
-			elseif BUILTINS[word] then
-				table.insert(result, wrap(word, COLORS.builtin))
-			elseif isCall then
-				table.insert(result, wrap(word, COLORS.func))
-			else
-				table.insert(result, wrap(word, COLORS.default))
-			end
-
-		else
-			table.insert(result, escapeRich(c))
-			pos += 1
-		end
-	end
-
-	return table.concat(result) 
-end
-
-local function tokenizeLine(line: string)
-	local tokens = {}
-	local pos, len = 1, #line
-
-	local function push(text, color, startCol)
-		table.insert(tokens, { text = text, color = color, startCol = startCol, endCol = startCol + #text - 1 })
-	end
-
-	while pos <= len do
-		local c = line:sub(pos, pos)
-
-		if c == " " or c == "\t" then
-			local startPos = pos
-			while pos <= len and (line:sub(pos, pos) == " " or line:sub(pos, pos) == "\t") do
-				pos += 1
-			end
-			push(line:sub(startPos, pos - 1), nil, startPos)
-
-		elseif line:sub(pos, pos + 1) == "--" then
-			push(line:sub(pos), "comment", pos)
-			pos = len + 1
-
-		elseif c == '"' or c == "'" then
-			local quote = c
-			local startPos = pos
-			pos += 1
-			while pos <= len and line:sub(pos, pos) ~= quote do
-				if line:sub(pos, pos) == "\\" then pos += 1 end
-				pos += 1
-			end
-			pos = math.min(pos, len) + 1
-			push(line:sub(startPos, pos - 1), "string", startPos)
-
-		elseif c == "@" then
-			local startPos = pos
-			pos += 1
-			while pos <= len and line:sub(pos, pos):match("[%a_]") do pos += 1 end
-			push(line:sub(startPos, pos - 1), "decorator", startPos)
-
-		elseif c:match("%d") then
-			local startPos = pos
-			while pos <= len and line:sub(pos, pos):match("[%d%.]") do pos += 1 end
-			push(line:sub(startPos, pos - 1), "number", startPos)
-
-		elseif c:match("[%a_]") then
-			local startPos = pos
-			while pos <= len and line:sub(pos, pos):match("[%w_]") do pos += 1 end
-			local word = line:sub(startPos, pos - 1)
-
-			local peek = pos
-			while peek <= len and line:sub(peek, peek) == " " do peek += 1 end
-			local isCall = line:sub(peek, peek) == "("
-
-			local color
-			if KEYWORDS[word] then color = "keyword"
-			elseif TYPES[word] then color = "type"
-			elseif BUILTINS[word] then color = "builtin"
-			elseif isCall then color = "func"
-			else color = "default" end
-
-			push(word, color, startPos)
-
-		else
-			push(c, "default", pos)
-			pos += 1
-		end
-	end
-
-	return tokens
-end
-
-local BRACKET_PAIRS = { ["("] = ")", ["["] = "]", ["{"] = "}" }
-local CLOSING_TO_OPENING = { [")"] = "(", ["]"] = "[", ["}"] = "{" }
-
-local errorsByLine = Value({}) -- [lineIndex] = { {col=, len=, message=}, ... }
-
-local function recomputeErrors()
-	local lines = unwrap(source)
-	local errors = {}
-	local stack = {} -- { char=, line=, col= }
-
-	local function addError(lineIndex, col, len, message)
-		if not errors[lineIndex] then errors[lineIndex] = {} end
-		table.insert(errors[lineIndex], { col = col, len = len, message = message })
-	end
-
-	for lineIndex, line in ipairs(lines) do
-		local pos, len = 1, #line
-		while pos <= len do
-			local c = line:sub(pos, pos)
-
-			if line:sub(pos, pos + 1) == "--" then
-				break -- rest of line is a comment; nothing after this matters
-
-			elseif c == '"' or c == "'" then
-				local quote = c
-				local startCol = pos
-				pos += 1
-				local closed = false
-				while pos <= len do
-					local cc = line:sub(pos, pos)
-					if cc == "\\" then
-						pos += 2
-					elseif cc == quote then
-						closed = true
-						pos += 1
-						break
-					else
-						pos += 1
-					end
-				end
-				if not closed then
-					addError(lineIndex, startCol, len - startCol + 1, "Unterminated string")
-				end
-
-			elseif BRACKET_PAIRS[c] then
-				table.insert(stack, { char = c, line = lineIndex, col = pos })
-				pos += 1
-
-			elseif CLOSING_TO_OPENING[c] then
-				local top = stack[#stack]
-				if top and top.char == CLOSING_TO_OPENING[c] then
-					table.remove(stack)
-				else
-					addError(lineIndex, pos, 1, `Unmatched '{c}'`)
-				end
-				pos += 1
-
-			else
-				pos += 1
-			end
-		end
-	end
-
-	-- anything left on the stack never got closed
-	for _, unclosed in ipairs(stack) do
-		addError(unclosed.line, unclosed.col, 1, `Unclosed '{unclosed.char}'`)
-	end
-
-	errorsByLine:set(errors)
-end
-
-COLORS.error = "F44747" -- vscode-style error red
-
-local function rangesOverlap(aStart, aEnd, bStart, bEnd)
-	return aStart <= bEnd and bStart <= aEnd
-end
-
-local function renderLine(line: string, lineErrors)
-	local tokens = tokenizeLine(line)
-	local parts = {}
-
-	for _, token in ipairs(tokens) do
-		if token.text == "" then continue end
-
-		local isError = false
-		if lineErrors then
-			for _, err in ipairs(lineErrors) do
-				if rangesOverlap(token.startCol, token.endCol, err.col, err.col + err.len - 1) then
-					isError = true
-					break
-				end
-			end
-		end
-
-		if isError then
-			table.insert(parts, string.format('<font color="#%s"><u>%s</u></font>', COLORS.error, escapeRich(token.text)))
-		elseif token.color and COLORS[token.color] then
-			table.insert(parts, wrap(token.text, COLORS[token.color]))
-		else
-			table.insert(parts, escapeRich(token.text))
-		end
-	end
-
-	return table.concat(parts)
-end
-
-local function getFocusedIndex(): number?
-	local focusedBox = UserInputService:GetFocusedTextBox()
-	if not focusedBox then
-		return nil
-	end
-	for i, ref in pairs(textBoxRefs) do
-		if unwrap(ref) == focusedBox then
-			return i
-		end
-	end
-	return nil
-end
-
-local function createLine(index: number, sourceText: string)
-	local textBoxRef = Value(nil)
-	textBoxRefs[index] = textBoxRef
-
-	local lineTextValue = Value(sourceText)
-	local highlighted = Computed(function()
-		local errs = unwrap(errorsByLine)
-		return renderLine(unwrap(lineTextValue), errs[index])
-	end)
-
-	local cursorPos = -1
-	local isFocused = Value(false)
-	
-	local textBox: TextBox; textBox = New("TextBox")({
-		[Ref] = textBoxRef,
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		ClearTextOnFocus = false,
-		RichText = false,
-		TextColor3 = Color3.new(1, 1, 1),
-		TextTransparency = Computed(function()
-			return unwrap(isFocused) == true and 0.75 or 1
-		end),
-		ZIndex = 2,
-
-		Text = sourceText,
-		Font = Enum.Font.Code,
-		TextSize = 15,
-		AutomaticSize = Enum.AutomaticSize.X,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Center,
-
-		[OnEvent("Changed")] = function(prop: string)
-			if prop == "Text" then
-				local currentLines = unwrap(source)
-				currentLines[index] = textBox.Text
-				lineTextValue:set(textBox.Text)
-				recomputeErrors()
-			elseif prop == "CursorPosition" and textBox:IsFocused() then
-				cursorPos = textBox.CursorPosition
-			end
-			isFocused:set(textBox:IsFocused())
-		end,
-		
-		[OnEvent("FocusLost")] = function(enterPressed: boolean, input: InputObject)
-			isFocused:set(false)
-			if not enterPressed then return end
-			
-			if cursorPos == -1 then
-				cursorPos = #textBox.Text + 1
-			end
-
-			local fullText = textBox.Text
-			local beforeText = string.sub(fullText, 1, cursorPos - 1)
-			local afterText = string.sub(fullText, cursorPos)
-			
-			local currentLines = unwrap(source)
-			local newLines = table.clone(currentLines)
-			newLines[index] = beforeText
-			table.insert(newLines, index + 1, afterText)
-			source:set(newLines)
-			
-			task.defer(function()
-				local nextBox = unwrap(textBoxRefs[index + 1])
-				if nextBox then
-					nextBox:CaptureFocus()
-					nextBox.CursorPosition = 1
-				end
-			end)
-		end
-	})
-	
-	local highlightLabel = New("TextLabel")({
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		RichText = true,
-		Interactable = false,
-		Active = false,
-		Text = highlighted,
-		Font = Enum.Font.Code,
-		TextSize = 15,
-		TextColor3 = Color3.fromRGB(212, 212, 212),
-		AutomaticSize = Enum.AutomaticSize.X,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextYAlignment = Enum.TextYAlignment.Center,
-	})
-	
-	local lineFrame = New("Frame")({
-		Size = UDim2.new(1, 0, 0, 22),
-		AutomaticSize = Enum.AutomaticSize.X,
-		BackgroundTransparency = 1,
-		LayoutOrder = index,
-
-		[Children] = {
-			New("UIListLayout")({
-				FillDirection = Enum.FillDirection.Horizontal,
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				VerticalAlignment = Enum.VerticalAlignment.Center,
-			}),
-
-			New("Frame")({
-				Size = UDim2.fromOffset(40, 22),
-				BackgroundTransparency = 1,
-				LayoutOrder = 1,
-				[Children] = {
-					New("TextLabel")({
-						Size = UDim2.fromScale(1, 1),
-						BackgroundTransparency = 1,
-						RichText = true,
-						Text = Computed(function()
-							return unwrap(isFocused) and `<b>{tostring(index)}</b>` or tostring(index)
-						end),
-						TextXAlignment = Enum.TextXAlignment.Right,
-						Font = Enum.Font.Code,
-						TextSize = 15,
-						TextColor3 = Computed(function()
-							local errs = unwrap(errorsByLine)
-							if errs[index] then
-								return Color3.fromRGB(244, 71, 71)
-							end
-							return Color3.fromRGB(130, 130, 130)
-						end),
-					}),
-				},
-			}),
-
-			New("Frame")({
-				Size = UDim2.fromOffset(18, 22),
-				BackgroundTransparency = 1,
-				LayoutOrder = 2,
-				[Children] = {
-					New("TextLabel")({
-						Size = UDim2.fromScale(1, 1),
-						BackgroundTransparency = 1,
-						Text = "",
-						Font = Enum.Font.Code,
-						TextSize = 14,
-						TextColor3 = Color3.fromRGB(170, 170, 170),
-						TextXAlignment = Enum.TextXAlignment.Center,
-					}),
-				},
-			}),
-
-			New("Frame")({
-				Size = UDim2.new(1, -58, 1, 0),
-				AutomaticSize = Enum.AutomaticSize.X,
-				BackgroundTransparency = 1,
-				LayoutOrder = 3,
-				[Children] = { textBox, highlightLabel },
-			}),
-		},
-	})
-	
-	return lineFrame
-end
-
-local lineComponents = Computed(function()
-	table.clear(textBoxRefs)
-	local components = {}
-	for i, line in ipairs(unwrap(source)) do
-		table.insert(components, createLine(i, line))
-	end
-	return components
-end)
-
-local WhiteBg = "rbxasset://textures/ui/InGameMenu/WhiteSquare.png"
-recomputeErrors()
-local BaseFrame = New("ScrollingFrame")({
-	Parent = ScreenGui,
-
-	Size = Frame.Size,
-	Position = Frame.Position,
-	AnchorPoint = Frame.AnchorPoint,
-	BackgroundColor3 = Frame.BackgroundColor3,
-	AutomaticSize = Frame.AutomaticSize,
-	BackgroundTransparency = Frame.BackgroundTransparency,
-	ClipsDescendants = true,
-
-	CanvasSize = UDim2.new(0, 0, 0, 0),
-	AutomaticCanvasSize = Enum.AutomaticSize.XY,
-	
-	TopImage = WhiteBg,
-	MidImage = WhiteBg,
-	BottomImage = WhiteBg,
-	
-	ScrollBarThickness = 12,
-	ScrollBarImageTransparency = 0.75,
-	ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255),
-	
-	ScrollingDirection = Enum.ScrollingDirection.XY,
-	VerticalScrollBarInset = Enum.ScrollBarInset.Always,
-	HorizontalScrollBarInset = Enum.ScrollBarInset.Always,
-	
-
-	[Children] = {
-		New("UIPadding")({
-			PaddingTop = UDim.new(0, 10),
-			PaddingLeft = UDim.new(0, 10),
-			PaddingBottom = UDim.new(0, 10),
-			PaddingRight = UDim.new(0, 10),
-		}),
-
-		New("UIListLayout")({
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 0),
-		}),
-
-		lineComponents,
-	},
-})
-
-UserInputService.InputBegan:Connect(function(input: InputObject, gameProcessedEvent: boolean)
-	if input.UserInputType ~= Enum.UserInputType.Keyboard then
-		return
-	end
-
-	local index: number? = getFocusedIndex()
-	if not index then
-		return
-	end
-
-	local textBox: TextBox = unwrap(textBoxRefs[index])
-	if not textBox then
-		return
-	end
-
-	if input.KeyCode == Enum.KeyCode.Up then
-		local cursorPos = textBox.CursorPosition
-		if cursorPos == -1 then
-			cursorPos = #textBox.Text + 1
-		end
-
-		local prevRef = textBoxRefs[index - 1]
-		local prevBox = prevRef and unwrap(prevRef)
-		if prevBox then
-			prevBox:CaptureFocus()
-			prevBox.CursorPosition = math.min(cursorPos, #prevBox.Text + 1)
-		end
-	elseif input.KeyCode == Enum.KeyCode.Down then
-		local cursorPos = textBox.CursorPosition
-		if cursorPos == -1 then
-			cursorPos = #textBox.Text + 1
-		end
-
-		local nextRef = textBoxRefs[index + 1]
-		local nextBox = nextRef and unwrap(nextRef)
-		if nextBox then
-			nextBox:CaptureFocus()
-			nextBox.CursorPosition = math.min(cursorPos, #nextBox.Text + 1)
-		end
-	elseif input.KeyCode == Enum.KeyCode.Backspace then
-		local cursorPos = textBox.CursorPosition
-		if cursorPos == -1 then
-			cursorPos = #textBox.Text + 1
-		end
-
-		if cursorPos ~= 1 then
-			return
-		elseif index <= 1 then
-			return 
-		end
-
-		local currentLines = unwrap(source)
-		local prevText = currentLines[index - 1]
-		local currentText = textBox.Text
-		local mergedCursorPos = #prevText + 1
-
-		local newLines = table.clone(currentLines)
-		newLines[index - 1] = prevText .. currentText
-		table.remove(newLines, index)
-		source:set(newLines)
-
-		task.defer(function()
-			local prevBox = unwrap(textBoxRefs[index - 1])
-			if prevBox then
-				prevBox:CaptureFocus()
-				prevBox.CursorPosition = mergedCursorPos
-			end
-		end)
-	end
-end)
-
-Frame:Destroy()]]></ProtectedString>
-					<bool name="Disabled">false</bool>
-					<Content name="LinkedSource"><null></null></Content>
-					<token name="RunContext">0</token>
-					<string name="ScriptGuid">{EEC5341E-2393-46E8-8602-E531CFC076EB}</string>
-					<BinaryString name="AttributesSerialize"></BinaryString>
-					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
-					<bool name="DefinesCapabilities">false</bool>
-					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
-					<string name="Name">LocalScript</string>
-					<int64 name="SourceAssetId">-1</int64>
-					<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
-					<UniqueId name="UniqueId">6b82b1954e6d52ef0a78c58900000404</UniqueId>
-				</Properties>
-			</Item>
 			<Item class="Folder" referent="85">
 				<Properties>
 					<BinaryString name="AttributesSerialize"></BinaryString>
@@ -11245,7 +10534,7 @@ return xtypeof]]></ProtectedString>
 					<Ref name="NextSelectionRight">null</Ref>
 					<Ref name="NextSelectionUp">null</Ref>
 					<UDim2 name="Position">
-						<XS>0.236673772</XS>
+						<XS>0.236673802</XS>
 						<XO>0</XO>
 						<YS>0.14436619</YS>
 						<YO>0</YO>
@@ -11256,7 +10545,7 @@ return xtypeof]]></ProtectedString>
 					<int name="SelectionOrder">0</int>
 					<UDim2 name="Size">
 						<XS>0</XS>
-						<XO>494</XO>
+						<XO>652</XO>
 						<YS>0</YS>
 						<YO>403</YO>
 					</UDim2>
@@ -11279,6 +10568,496 @@ return xtypeof]]></ProtectedString>
 					<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
 					<UniqueId name="UniqueId">385fc8e4b81a03840a8f53a300002c55</UniqueId>
 				</Properties>
+				<Item class="ScrollingFrame" referent="RBX78EE04E44404448386C5775CD605FBF4">
+					<Properties>
+						<token name="AutomaticCanvasSize">3</token>
+						<Content name="BottomImage"><url>rbxassetid://132155326</url></Content>
+						<Vector2 name="CanvasPosition">
+							<X>0</X>
+							<Y>0</Y>
+						</Vector2>
+						<UDim2 name="CanvasSize">
+							<XS>0</XS>
+							<XO>0</XO>
+							<YS>0</YS>
+							<YO>0</YO>
+						</UDim2>
+						<token name="ElasticBehavior">0</token>
+						<token name="HorizontalScrollBarInset">2</token>
+						<Content name="MidImage"><url>rbxassetid://132155326</url></Content>
+						<Color3 name="ScrollBarImageColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<float name="ScrollBarImageTransparency">0.699999988</float>
+						<int name="ScrollBarThickness">8</int>
+						<token name="ScrollingDirection">4</token>
+						<bool name="ScrollingEnabled">true</bool>
+						<Content name="TopImage"><url>rbxassetid://132155326</url></Content>
+						<token name="VerticalScrollBarInset">2</token>
+						<token name="VerticalScrollBarPosition">0</token>
+						<bool name="Active">true</bool>
+						<Vector2 name="AnchorPoint">
+							<X>0</X>
+							<Y>0</Y>
+						</Vector2>
+						<token name="AutomaticSize">0</token>
+						<Color3 name="BackgroundColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<float name="BackgroundTransparency">1</float>
+						<Color3 name="BorderColor3">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<token name="BorderMode">0</token>
+						<int name="BorderSizePixel">0</int>
+						<bool name="ClipsDescendants">true</bool>
+						<bool name="Draggable">false</bool>
+						<token name="InputSink">0</token>
+						<bool name="Interactable">true</bool>
+						<int name="LayoutOrder">1</int>
+						<Ref name="NextSelectionDown">null</Ref>
+						<Ref name="NextSelectionLeft">null</Ref>
+						<Ref name="NextSelectionRight">null</Ref>
+						<Ref name="NextSelectionUp">null</Ref>
+						<UDim2 name="Position">
+							<XS>0</XS>
+							<XO>0</XO>
+							<YS>0</YS>
+							<YO>0</YO>
+						</UDim2>
+						<float name="Rotation">0</float>
+						<bool name="Selectable">true</bool>
+						<Ref name="SelectionImageObject">null</Ref>
+						<int name="SelectionOrder">0</int>
+						<UDim2 name="Size">
+							<XS>1</XS>
+							<XO>0</XO>
+							<YS>1</YS>
+							<YO>0</YO>
+						</UDim2>
+						<token name="SizeConstraint">0</token>
+						<bool name="Visible">true</bool>
+						<int name="ZIndex">1</int>
+						<bool name="AutoLocalize">true</bool>
+						<Ref name="RootLocalizationTable">null</Ref>
+						<token name="SelectionBehaviorDown">0</token>
+						<token name="SelectionBehaviorLeft">0</token>
+						<token name="SelectionBehaviorRight">0</token>
+						<token name="SelectionBehaviorUp">0</token>
+						<bool name="SelectionGroup">true</bool>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">ContentContainer</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae54000022cd</UniqueId>
+					</Properties>
+					<Item class="TextBox" referent="RBX104B0560F62E41529467AD097B877F50">
+						<Properties>
+							<bool name="ClearTextOnFocus">false</bool>
+							<Font name="FontFace">
+								<Family><url>rbxassetid://16658246179</url></Family>
+								<Weight>400</Weight>
+								<Style>Normal</Style>
+							</Font>
+							<float name="LineHeight">1</float>
+							<string name="LocalizationMatchIdentifier"></string>
+							<string name="LocalizationMatchedSourceText"></string>
+							<int name="MaxVisibleGraphemes">-1</int>
+							<bool name="MultiLine">false</bool>
+							<string name="OpenTypeFeatures"></string>
+							<Color3 name="PlaceholderColor3">
+								<R>0.5</R>
+								<G>0.5</G>
+								<B>0.5</B>
+							</Color3>
+							<string name="PlaceholderText"></string>
+							<bool name="RichText">true</bool>
+							<bool name="ShowNativeInput">true</bool>
+							<string name="Text"><![CDATA[@include shader_type canvas_item; -- canvas_item / spatial (3d)
+
+-- defining globa variables (editable)
+@export float:var hint_range(0.0, 1.0, 0.1) = 1.0; -- floats must have decimals
+
+-- defining static variables
+local world_uv: Vector2;
+const test: string = "test";
+
+-- number is available but in double form
+
+float:lerp(a: float, b: float, float: float) {
+	return a + (b - a) * c;
+}
+
+nil:vertex() {
+	-- Called for every vertex the material is visible on.
+	
+	world_uv = (MODEL_MATRIX * vec4(VERTEX.xy, 0.0, 1.0)).xy / 128.0;
+}
+
+(nil):fragment() {
+	-- Called for every pixel the material is visible on.
+	center: Vector2 = Vector2.new(0, 0);
+	vec: Vector2 = UV - center;
+	
+	dist: number = math.sqrt(math.pow(vec.X, 2) + math.pow(vec.Y, 2));
+	
+	COLOR = texture(TEXTURE, UV);
+}]]></string>
+							<Color3 name="TextColor3">
+								<R>1</R>
+								<G>1</G>
+								<B>1</B>
+							</Color3>
+							<token name="TextDirection">0</token>
+							<bool name="TextEditable">true</bool>
+							<bool name="TextScaled">false</bool>
+							<float name="TextSize">22</float>
+							<Color3 name="TextStrokeColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<float name="TextStrokeTransparency">1</float>
+							<float name="TextTransparency">0</float>
+							<token name="TextTruncate">0</token>
+							<bool name="TextWrapped">false</bool>
+							<token name="TextXAlignment">0</token>
+							<token name="TextYAlignment">0</token>
+							<bool name="Active">false</bool>
+							<Vector2 name="AnchorPoint">
+								<X>0</X>
+								<Y>0</Y>
+							</Vector2>
+							<token name="AutomaticSize">3</token>
+							<Color3 name="BackgroundColor3">
+								<R>1</R>
+								<G>1</G>
+								<B>1</B>
+							</Color3>
+							<float name="BackgroundTransparency">1</float>
+							<Color3 name="BorderColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<token name="BorderMode">0</token>
+							<int name="BorderSizePixel">0</int>
+							<bool name="ClipsDescendants">false</bool>
+							<bool name="Draggable">false</bool>
+							<token name="InputSink">0</token>
+							<bool name="Interactable">true</bool>
+							<int name="LayoutOrder">0</int>
+							<Ref name="NextSelectionDown">null</Ref>
+							<Ref name="NextSelectionLeft">null</Ref>
+							<Ref name="NextSelectionRight">null</Ref>
+							<Ref name="NextSelectionUp">null</Ref>
+							<UDim2 name="Position">
+								<XS>0</XS>
+								<XO>0</XO>
+								<YS>0</YS>
+								<YO>0</YO>
+							</UDim2>
+							<float name="Rotation">0</float>
+							<bool name="Selectable">false</bool>
+							<Ref name="SelectionImageObject">null</Ref>
+							<int name="SelectionOrder">0</int>
+							<UDim2 name="Size">
+								<XS>1</XS>
+								<XO>0</XO>
+								<YS>1</YS>
+								<YO>0</YO>
+							</UDim2>
+							<token name="SizeConstraint">0</token>
+							<bool name="Visible">true</bool>
+							<int name="ZIndex">1</int>
+							<bool name="AutoLocalize">true</bool>
+							<Ref name="RootLocalizationTable">null</Ref>
+							<token name="SelectionBehaviorDown">0</token>
+							<token name="SelectionBehaviorLeft">0</token>
+							<token name="SelectionBehaviorRight">0</token>
+							<token name="SelectionBehaviorUp">0</token>
+							<bool name="SelectionGroup">false</bool>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+							<string name="Name">ContentInputFrame</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">13dc61f826c405520a8fae54000022b7</UniqueId>
+						</Properties>
+					</Item>
+					<Item class="UIPadding" referent="RBX781601EA0FFE45A9B2BB70096815841C">
+						<Properties>
+							<UDim name="PaddingBottom">
+								<S>0</S>
+								<O>0</O>
+							</UDim>
+							<UDim name="PaddingLeft">
+								<S>0</S>
+								<O>8</O>
+							</UDim>
+							<UDim name="PaddingRight">
+								<S>0</S>
+								<O>0</O>
+							</UDim>
+							<UDim name="PaddingTop">
+								<S>0</S>
+								<O>0</O>
+							</UDim>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+							<string name="Name">UIPadding</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002334</UniqueId>
+						</Properties>
+					</Item>
+				</Item>
+				<Item class="UIListLayout" referent="RBX9D8C064D9F7841DD8DA0A653817DD10E">
+					<Properties>
+						<token name="HorizontalFlex">1</token>
+						<token name="ItemLineAlignment">0</token>
+						<UDim name="Padding">
+							<S>0</S>
+							<O>0</O>
+						</UDim>
+						<token name="VerticalFlex">0</token>
+						<bool name="Wraps">false</bool>
+						<token name="FillDirection">0</token>
+						<token name="HorizontalAlignment">1</token>
+						<token name="SortOrder">2</token>
+						<token name="VerticalAlignment">1</token>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">UIListLayout</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae540000232d</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="Frame" referent="RBXD029481FB7C046B3BA5ED777571AF074">
+					<Properties>
+						<token name="Style">0</token>
+						<bool name="Active">false</bool>
+						<Vector2 name="AnchorPoint">
+							<X>0</X>
+							<Y>0</Y>
+						</Vector2>
+						<token name="AutomaticSize">0</token>
+						<Color3 name="BackgroundColor3">
+							<R>0.0745098069</R>
+							<G>0.0745098069</G>
+							<B>0.0784313753</B>
+						</Color3>
+						<float name="BackgroundTransparency">0</float>
+						<Color3 name="BorderColor3">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<token name="BorderMode">0</token>
+						<int name="BorderSizePixel">0</int>
+						<bool name="ClipsDescendants">false</bool>
+						<bool name="Draggable">false</bool>
+						<token name="InputSink">0</token>
+						<bool name="Interactable">true</bool>
+						<int name="LayoutOrder">0</int>
+						<Ref name="NextSelectionDown">null</Ref>
+						<Ref name="NextSelectionLeft">null</Ref>
+						<Ref name="NextSelectionRight">null</Ref>
+						<Ref name="NextSelectionUp">null</Ref>
+						<UDim2 name="Position">
+							<XS>0</XS>
+							<XO>0</XO>
+							<YS>0</YS>
+							<YO>0</YO>
+						</UDim2>
+						<float name="Rotation">0</float>
+						<bool name="Selectable">false</bool>
+						<Ref name="SelectionImageObject">null</Ref>
+						<int name="SelectionOrder">0</int>
+						<UDim2 name="Size">
+							<XS>0</XS>
+							<XO>68</XO>
+							<YS>1</YS>
+							<YO>0</YO>
+						</UDim2>
+						<token name="SizeConstraint">0</token>
+						<bool name="Visible">true</bool>
+						<int name="ZIndex">1</int>
+						<bool name="AutoLocalize">true</bool>
+						<Ref name="RootLocalizationTable">null</Ref>
+						<token name="SelectionBehaviorDown">0</token>
+						<token name="SelectionBehaviorLeft">0</token>
+						<token name="SelectionBehaviorRight">0</token>
+						<token name="SelectionBehaviorUp">0</token>
+						<bool name="SelectionGroup">false</bool>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">LineContainer</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae540000232e</UniqueId>
+					</Properties>
+					<Item class="TextLabel" referent="RBX6B553A3A273B4C2C82F45A0BF99996CE">
+						<Properties>
+							<Font name="FontFace">
+								<Family><url>rbxassetid://16658246179</url></Family>
+								<Weight>400</Weight>
+								<Style>Normal</Style>
+							</Font>
+							<float name="LineHeight">1</float>
+							<string name="LocalizationMatchIdentifier"></string>
+							<string name="LocalizationMatchedSourceText"></string>
+							<int name="MaxVisibleGraphemes">-1</int>
+							<string name="OpenTypeFeatures"></string>
+							<bool name="RichText">true</bool>
+							<string name="Text">1&lt;br /&gt;2&lt;br /&gt;3</string>
+							<Color3 name="TextColor3">
+								<R>1</R>
+								<G>1</G>
+								<B>1</B>
+							</Color3>
+							<token name="TextDirection">0</token>
+							<bool name="TextScaled">false</bool>
+							<float name="TextSize">22</float>
+							<Color3 name="TextStrokeColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<float name="TextStrokeTransparency">1</float>
+							<float name="TextTransparency">0</float>
+							<token name="TextTruncate">0</token>
+							<bool name="TextWrapped">false</bool>
+							<token name="TextXAlignment">1</token>
+							<token name="TextYAlignment">0</token>
+							<bool name="Active">false</bool>
+							<Vector2 name="AnchorPoint">
+								<X>0</X>
+								<Y>0</Y>
+							</Vector2>
+							<token name="AutomaticSize">0</token>
+							<Color3 name="BackgroundColor3">
+								<R>1</R>
+								<G>1</G>
+								<B>1</B>
+							</Color3>
+							<float name="BackgroundTransparency">1</float>
+							<Color3 name="BorderColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<token name="BorderMode">0</token>
+							<int name="BorderSizePixel">0</int>
+							<bool name="ClipsDescendants">false</bool>
+							<bool name="Draggable">false</bool>
+							<token name="InputSink">0</token>
+							<bool name="Interactable">true</bool>
+							<int name="LayoutOrder">0</int>
+							<Ref name="NextSelectionDown">null</Ref>
+							<Ref name="NextSelectionLeft">null</Ref>
+							<Ref name="NextSelectionRight">null</Ref>
+							<Ref name="NextSelectionUp">null</Ref>
+							<UDim2 name="Position">
+								<XS>0</XS>
+								<XO>0</XO>
+								<YS>0</YS>
+								<YO>0</YO>
+							</UDim2>
+							<float name="Rotation">0</float>
+							<bool name="Selectable">false</bool>
+							<Ref name="SelectionImageObject">null</Ref>
+							<int name="SelectionOrder">0</int>
+							<UDim2 name="Size">
+								<XS>1</XS>
+								<XO>0</XO>
+								<YS>1</YS>
+								<YO>0</YO>
+							</UDim2>
+							<token name="SizeConstraint">0</token>
+							<bool name="Visible">true</bool>
+							<int name="ZIndex">1</int>
+							<bool name="AutoLocalize">true</bool>
+							<Ref name="RootLocalizationTable">null</Ref>
+							<token name="SelectionBehaviorDown">0</token>
+							<token name="SelectionBehaviorLeft">0</token>
+							<token name="SelectionBehaviorRight">0</token>
+							<token name="SelectionBehaviorUp">0</token>
+							<bool name="SelectionGroup">false</bool>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+							<string name="Name">LineTextLabel</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002357</UniqueId>
+						</Properties>
+					</Item>
+					<Item class="UIPadding" referent="RBX826C20A32B414833AF762313171F9F25">
+						<Properties>
+							<UDim name="PaddingBottom">
+								<S>0</S>
+								<O>0</O>
+							</UDim>
+							<UDim name="PaddingLeft">
+								<S>0</S>
+								<O>0</O>
+							</UDim>
+							<UDim name="PaddingRight">
+								<S>0</S>
+								<O>4</O>
+							</UDim>
+							<UDim name="PaddingTop">
+								<S>0</S>
+								<O>0</O>
+							</UDim>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+							<string name="Name">UIPadding</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002391</UniqueId>
+						</Properties>
+					</Item>
+				</Item>
+				<Item class="LocalScript" referent="RBXEEE68545EB884ED098515ECB086BED98">
+					<Properties>
+						<ProtectedString name="Source"></ProtectedString>
+						<bool name="Disabled">false</bool>
+						<Content name="LinkedSource"><null></null></Content>
+						<token name="RunContext">0</token>
+						<string name="ScriptGuid">{06390E01-DDA4-4E48-8B09-A8AF4CC96C76}</string>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">LocalScript</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae540000232f</UniqueId>
+					</Properties>
+				</Item>
 			</Item>
 		</Item>
 		<Item class="Folder" referent="143">
@@ -64420,6 +64199,861 @@ end
 				</Item>
 			</Item>
 		</Item>
+		<Item class="ScreenGui" referent="RBX9E8EA53F4032456AB0B61C74C35C8DA5">
+			<Properties>
+				<bool name="ClipToDeviceSafeArea">true</bool>
+				<int name="DisplayOrder">0</int>
+				<token name="SafeAreaCompatibility">1</token>
+				<token name="ScreenInsets">1</token>
+				<bool name="Enabled">false</bool>
+				<bool name="ResetOnSpawn">true</bool>
+				<token name="ZIndexBehavior">1</token>
+				<bool name="AutoLocalize">true</bool>
+				<Ref name="RootLocalizationTable">null</Ref>
+				<token name="SelectionBehaviorDown">0</token>
+				<token name="SelectionBehaviorLeft">0</token>
+				<token name="SelectionBehaviorRight">0</token>
+				<token name="SelectionBehaviorUp">0</token>
+				<bool name="SelectionGroup">false</bool>
+				<BinaryString name="AttributesSerialize"></BinaryString>
+				<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+				<bool name="DefinesCapabilities">false</bool>
+				<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+				<string name="Name">CaptureScreen</string>
+				<int64 name="SourceAssetId">-1</int64>
+				<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+				<UniqueId name="UniqueId">13dc61f826c405520a8fae54000023b2</UniqueId>
+			</Properties>
+			<Item class="Frame" referent="RBX179F84B7318D49BDA1550265F604417A">
+				<Properties>
+					<token name="Style">0</token>
+					<bool name="Active">false</bool>
+					<Vector2 name="AnchorPoint">
+						<X>0</X>
+						<Y>0</Y>
+					</Vector2>
+					<token name="AutomaticSize">0</token>
+					<Color3 name="BackgroundColor3">
+						<R>0</R>
+						<G>0</G>
+						<B>0</B>
+					</Color3>
+					<float name="BackgroundTransparency">0.800000012</float>
+					<Color3 name="BorderColor3">
+						<R>0</R>
+						<G>0</G>
+						<B>0</B>
+					</Color3>
+					<token name="BorderMode">0</token>
+					<int name="BorderSizePixel">0</int>
+					<bool name="ClipsDescendants">false</bool>
+					<bool name="Draggable">false</bool>
+					<token name="InputSink">0</token>
+					<bool name="Interactable">true</bool>
+					<int name="LayoutOrder">2</int>
+					<Ref name="NextSelectionDown">null</Ref>
+					<Ref name="NextSelectionLeft">null</Ref>
+					<Ref name="NextSelectionRight">null</Ref>
+					<Ref name="NextSelectionUp">null</Ref>
+					<UDim2 name="Position">
+						<XS>0.446581185</XS>
+						<XO>0</XO>
+						<YS>0.418416798</YS>
+						<YO>0</YO>
+					</UDim2>
+					<float name="Rotation">0</float>
+					<bool name="Selectable">false</bool>
+					<Ref name="SelectionImageObject">null</Ref>
+					<int name="SelectionOrder">0</int>
+					<UDim2 name="Size">
+						<XS>1</XS>
+						<XO>0</XO>
+						<YS>1</YS>
+						<YO>0</YO>
+					</UDim2>
+					<token name="SizeConstraint">0</token>
+					<bool name="Visible">true</bool>
+					<int name="ZIndex">1</int>
+					<bool name="AutoLocalize">true</bool>
+					<Ref name="RootLocalizationTable">null</Ref>
+					<token name="SelectionBehaviorDown">0</token>
+					<token name="SelectionBehaviorLeft">0</token>
+					<token name="SelectionBehaviorRight">0</token>
+					<token name="SelectionBehaviorUp">0</token>
+					<bool name="SelectionGroup">false</bool>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">13dc61f826c405520a8fae5400002413</UniqueId>
+					<string name="Name">Background</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+					<UniqueId name="UniqueId">13dc61f826c405520a8fae540000248f</UniqueId>
+				</Properties>
+				<Item class="UIFlexItem" referent="RBX54619E2C05EA4BA3AD758FF73E3CB1B7">
+					<Properties>
+						<token name="FlexMode">3</token>
+						<float name="GrowRatio">0</float>
+						<token name="ItemLineAlignment">0</token>
+						<float name="ShrinkRatio">0</float>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">UIFlexItem</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002494</UniqueId>
+					</Properties>
+				</Item>
+			</Item>
+			<Item class="UIListLayout" referent="RBXC204239ABEC642AAB5BF3FE2F365B98B">
+				<Properties>
+					<token name="HorizontalFlex">0</token>
+					<token name="ItemLineAlignment">0</token>
+					<UDim name="Padding">
+						<S>0</S>
+						<O>0</O>
+					</UDim>
+					<token name="VerticalFlex">0</token>
+					<bool name="Wraps">false</bool>
+					<token name="FillDirection">1</token>
+					<token name="HorizontalAlignment">0</token>
+					<token name="SortOrder">2</token>
+					<token name="VerticalAlignment">0</token>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<string name="Name">UIListLayout</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+					<UniqueId name="UniqueId">13dc61f826c405520a8fae540000246d</UniqueId>
+				</Properties>
+			</Item>
+			<Item class="Frame" referent="RBXB664B48D008D4FF8BBFD830FE527CABE">
+				<Properties>
+					<token name="Style">0</token>
+					<bool name="Active">false</bool>
+					<Vector2 name="AnchorPoint">
+						<X>0</X>
+						<Y>0</Y>
+					</Vector2>
+					<token name="AutomaticSize">0</token>
+					<Color3 name="BackgroundColor3">
+						<R>0</R>
+						<G>0</G>
+						<B>0</B>
+					</Color3>
+					<float name="BackgroundTransparency">0.800000012</float>
+					<Color3 name="BorderColor3">
+						<R>0</R>
+						<G>0</G>
+						<B>0</B>
+					</Color3>
+					<token name="BorderMode">0</token>
+					<int name="BorderSizePixel">0</int>
+					<bool name="ClipsDescendants">false</bool>
+					<bool name="Draggable">false</bool>
+					<token name="InputSink">0</token>
+					<bool name="Interactable">true</bool>
+					<int name="LayoutOrder">0</int>
+					<Ref name="NextSelectionDown">null</Ref>
+					<Ref name="NextSelectionLeft">null</Ref>
+					<Ref name="NextSelectionRight">null</Ref>
+					<Ref name="NextSelectionUp">null</Ref>
+					<UDim2 name="Position">
+						<XS>0.446581185</XS>
+						<XO>0</XO>
+						<YS>0.418416798</YS>
+						<YO>0</YO>
+					</UDim2>
+					<float name="Rotation">0</float>
+					<bool name="Selectable">false</bool>
+					<Ref name="SelectionImageObject">null</Ref>
+					<int name="SelectionOrder">0</int>
+					<UDim2 name="Size">
+						<XS>1</XS>
+						<XO>0</XO>
+						<YS>1</YS>
+						<YO>0</YO>
+					</UDim2>
+					<token name="SizeConstraint">0</token>
+					<bool name="Visible">true</bool>
+					<int name="ZIndex">1</int>
+					<bool name="AutoLocalize">true</bool>
+					<Ref name="RootLocalizationTable">null</Ref>
+					<token name="SelectionBehaviorDown">0</token>
+					<token name="SelectionBehaviorLeft">0</token>
+					<token name="SelectionBehaviorRight">0</token>
+					<token name="SelectionBehaviorUp">0</token>
+					<bool name="SelectionGroup">false</bool>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+					<string name="Name">Background</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+					<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002413</UniqueId>
+				</Properties>
+				<Item class="UIFlexItem" referent="RBX6A2B1ABDE93E4BFE81859B133634D518">
+					<Properties>
+						<token name="FlexMode">3</token>
+						<float name="GrowRatio">0</float>
+						<token name="ItemLineAlignment">0</token>
+						<float name="ShrinkRatio">0</float>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">UIFlexItem</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002495</UniqueId>
+					</Properties>
+				</Item>
+			</Item>
+			<Item class="Frame" referent="RBX50D96F75F1E8451AB1CE544407A6ADAA">
+				<Properties>
+					<token name="Style">0</token>
+					<bool name="Active">false</bool>
+					<Vector2 name="AnchorPoint">
+						<X>0</X>
+						<Y>0</Y>
+					</Vector2>
+					<token name="AutomaticSize">0</token>
+					<Color3 name="BackgroundColor3">
+						<R>1</R>
+						<G>1</G>
+						<B>1</B>
+					</Color3>
+					<float name="BackgroundTransparency">1</float>
+					<Color3 name="BorderColor3">
+						<R>0</R>
+						<G>0</G>
+						<B>0</B>
+					</Color3>
+					<token name="BorderMode">0</token>
+					<int name="BorderSizePixel">0</int>
+					<bool name="ClipsDescendants">false</bool>
+					<bool name="Draggable">false</bool>
+					<token name="InputSink">0</token>
+					<bool name="Interactable">true</bool>
+					<int name="LayoutOrder">1</int>
+					<Ref name="NextSelectionDown">null</Ref>
+					<Ref name="NextSelectionLeft">null</Ref>
+					<Ref name="NextSelectionRight">null</Ref>
+					<Ref name="NextSelectionUp">null</Ref>
+					<UDim2 name="Position">
+						<XS>0.741987169</XS>
+						<XO>0</XO>
+						<YS>0.323909521</YS>
+						<YO>0</YO>
+					</UDim2>
+					<float name="Rotation">0</float>
+					<bool name="Selectable">false</bool>
+					<Ref name="SelectionImageObject">null</Ref>
+					<int name="SelectionOrder">0</int>
+					<UDim2 name="Size">
+						<XS>0</XS>
+						<XO>256</XO>
+						<YS>0</YS>
+						<YO>256</YO>
+					</UDim2>
+					<token name="SizeConstraint">0</token>
+					<bool name="Visible">true</bool>
+					<int name="ZIndex">2</int>
+					<bool name="AutoLocalize">true</bool>
+					<Ref name="RootLocalizationTable">null</Ref>
+					<token name="SelectionBehaviorDown">0</token>
+					<token name="SelectionBehaviorLeft">0</token>
+					<token name="SelectionBehaviorRight">0</token>
+					<token name="SelectionBehaviorUp">0</token>
+					<bool name="SelectionGroup">false</bool>
+					<BinaryString name="AttributesSerialize"></BinaryString>
+					<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+					<bool name="DefinesCapabilities">false</bool>
+					<UniqueId name="HistoryId">13dc61f826c405520a8fae5400002413</UniqueId>
+					<string name="Name">Window</string>
+					<int64 name="SourceAssetId">-1</int64>
+					<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+					<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002491</UniqueId>
+				</Properties>
+				<Item class="UIStroke" referent="RBX20799F463858484EB0F3A517C225E46F">
+					<Properties>
+						<token name="ApplyStrokeMode">0</token>
+						<UDim name="BorderOffset">
+							<S>0</S>
+							<O>0</O>
+						</UDim>
+						<token name="BorderStrokePosition">0</token>
+						<Color3 name="Color">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<bool name="Enabled">true</bool>
+						<token name="LineJoinMode">2</token>
+						<token name="StrokeSizingMode">0</token>
+						<float name="Thickness">2</float>
+						<float name="Transparency">0.800000012</float>
+						<int name="ZIndex">1</int>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">UIStroke</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae54000024e1</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="ImageLabel" referent="RBX2FB7F3C73EF045D98FD1DD0A49B239FB">
+					<Properties>
+						<Content name="Image"><url>rbxassetid://16898614020</url></Content>
+						<Color3 name="ImageColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<Vector2 name="ImageRectOffset">
+							<X>0</X>
+							<Y>257</Y>
+						</Vector2>
+						<Vector2 name="ImageRectSize">
+							<X>256</X>
+							<Y>256</Y>
+						</Vector2>
+						<float name="ImageTransparency">0.300000012</float>
+						<token name="ResampleMode">0</token>
+						<token name="ScaleType">0</token>
+						<Rect2D name="SliceCenter">
+							<min>
+								<X>0</X>
+								<Y>0</Y>
+							</min>
+							<max>
+								<X>0</X>
+								<Y>0</Y>
+							</max>
+						</Rect2D>
+						<float name="SliceScale">1</float>
+						<UDim2 name="TileSize">
+							<XS>1</XS>
+							<XO>0</XO>
+							<YS>1</YS>
+							<YO>0</YO>
+						</UDim2>
+						<bool name="Active">false</bool>
+						<Vector2 name="AnchorPoint">
+							<X>0</X>
+							<Y>0</Y>
+						</Vector2>
+						<token name="AutomaticSize">0</token>
+						<Color3 name="BackgroundColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<float name="BackgroundTransparency">1</float>
+						<Color3 name="BorderColor3">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<token name="BorderMode">0</token>
+						<int name="BorderSizePixel">0</int>
+						<bool name="ClipsDescendants">false</bool>
+						<bool name="Draggable">false</bool>
+						<token name="InputSink">0</token>
+						<bool name="Interactable">true</bool>
+						<int name="LayoutOrder">0</int>
+						<Ref name="NextSelectionDown">null</Ref>
+						<Ref name="NextSelectionLeft">null</Ref>
+						<Ref name="NextSelectionRight">null</Ref>
+						<Ref name="NextSelectionUp">null</Ref>
+						<UDim2 name="Position">
+							<XS>1</XS>
+							<XO>8</XO>
+							<YS>1</YS>
+							<YO>8</YO>
+						</UDim2>
+						<float name="Rotation">0</float>
+						<bool name="Selectable">false</bool>
+						<Ref name="SelectionImageObject">null</Ref>
+						<int name="SelectionOrder">0</int>
+						<UDim2 name="Size">
+							<XS>0</XS>
+							<XO>32</XO>
+							<YS>0</YS>
+							<YO>32</YO>
+						</UDim2>
+						<token name="SizeConstraint">0</token>
+						<bool name="Visible">true</bool>
+						<int name="ZIndex">1</int>
+						<bool name="AutoLocalize">true</bool>
+						<Ref name="RootLocalizationTable">null</Ref>
+						<token name="SelectionBehaviorDown">0</token>
+						<token name="SelectionBehaviorLeft">0</token>
+						<token name="SelectionBehaviorRight">0</token>
+						<token name="SelectionBehaviorUp">0</token>
+						<bool name="SelectionGroup">false</bool>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">arrow-down-right</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae5400003833</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="ImageLabel" referent="RBXC6F35C6D9A8948DBBBC4BB4FE829A6C7">
+					<Properties>
+						<Content name="Image"><url>rbxassetid://16898614166</url></Content>
+						<Color3 name="ImageColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<Vector2 name="ImageRectOffset">
+							<X>0</X>
+							<Y>0</Y>
+						</Vector2>
+						<Vector2 name="ImageRectSize">
+							<X>256</X>
+							<Y>256</Y>
+						</Vector2>
+						<float name="ImageTransparency">0.300000012</float>
+						<token name="ResampleMode">0</token>
+						<token name="ScaleType">0</token>
+						<Rect2D name="SliceCenter">
+							<min>
+								<X>0</X>
+								<Y>0</Y>
+							</min>
+							<max>
+								<X>0</X>
+								<Y>0</Y>
+							</max>
+						</Rect2D>
+						<float name="SliceScale">1</float>
+						<UDim2 name="TileSize">
+							<XS>1</XS>
+							<XO>0</XO>
+							<YS>1</YS>
+							<YO>0</YO>
+						</UDim2>
+						<bool name="Active">false</bool>
+						<Vector2 name="AnchorPoint">
+							<X>0.5</X>
+							<Y>0</Y>
+						</Vector2>
+						<token name="AutomaticSize">0</token>
+						<Color3 name="BackgroundColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<float name="BackgroundTransparency">1</float>
+						<Color3 name="BorderColor3">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<token name="BorderMode">0</token>
+						<int name="BorderSizePixel">0</int>
+						<bool name="ClipsDescendants">false</bool>
+						<bool name="Draggable">false</bool>
+						<token name="InputSink">0</token>
+						<bool name="Interactable">true</bool>
+						<int name="LayoutOrder">0</int>
+						<Ref name="NextSelectionDown">null</Ref>
+						<Ref name="NextSelectionLeft">null</Ref>
+						<Ref name="NextSelectionRight">null</Ref>
+						<Ref name="NextSelectionUp">null</Ref>
+						<UDim2 name="Position">
+							<XS>0.5</XS>
+							<XO>0</XO>
+							<YS>1</YS>
+							<YO>8</YO>
+						</UDim2>
+						<float name="Rotation">0</float>
+						<bool name="Selectable">false</bool>
+						<Ref name="SelectionImageObject">null</Ref>
+						<int name="SelectionOrder">0</int>
+						<UDim2 name="Size">
+							<XS>0</XS>
+							<XO>32</XO>
+							<YS>0</YS>
+							<YO>32</YO>
+						</UDim2>
+						<token name="SizeConstraint">0</token>
+						<bool name="Visible">true</bool>
+						<int name="ZIndex">1</int>
+						<bool name="AutoLocalize">true</bool>
+						<Ref name="RootLocalizationTable">null</Ref>
+						<token name="SelectionBehaviorDown">0</token>
+						<token name="SelectionBehaviorLeft">0</token>
+						<token name="SelectionBehaviorRight">0</token>
+						<token name="SelectionBehaviorUp">0</token>
+						<bool name="SelectionGroup">false</bool>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">arrow-down</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae54000039ca</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="ImageLabel" referent="RBX801A56B7909246C28EECB4F96D284812">
+					<Properties>
+						<Content name="Image"><url>rbxassetid://16898614275</url></Content>
+						<Color3 name="ImageColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<Vector2 name="ImageRectOffset">
+							<X>514</X>
+							<Y>0</Y>
+						</Vector2>
+						<Vector2 name="ImageRectSize">
+							<X>256</X>
+							<Y>256</Y>
+						</Vector2>
+						<float name="ImageTransparency">0.300000012</float>
+						<token name="ResampleMode">0</token>
+						<token name="ScaleType">0</token>
+						<Rect2D name="SliceCenter">
+							<min>
+								<X>0</X>
+								<Y>0</Y>
+							</min>
+							<max>
+								<X>0</X>
+								<Y>0</Y>
+							</max>
+						</Rect2D>
+						<float name="SliceScale">1</float>
+						<UDim2 name="TileSize">
+							<XS>1</XS>
+							<XO>0</XO>
+							<YS>1</YS>
+							<YO>0</YO>
+						</UDim2>
+						<bool name="Active">false</bool>
+						<Vector2 name="AnchorPoint">
+							<X>0</X>
+							<Y>0.5</Y>
+						</Vector2>
+						<token name="AutomaticSize">0</token>
+						<Color3 name="BackgroundColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<float name="BackgroundTransparency">1</float>
+						<Color3 name="BorderColor3">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<token name="BorderMode">0</token>
+						<int name="BorderSizePixel">0</int>
+						<bool name="ClipsDescendants">false</bool>
+						<bool name="Draggable">false</bool>
+						<token name="InputSink">0</token>
+						<bool name="Interactable">true</bool>
+						<int name="LayoutOrder">0</int>
+						<Ref name="NextSelectionDown">null</Ref>
+						<Ref name="NextSelectionLeft">null</Ref>
+						<Ref name="NextSelectionRight">null</Ref>
+						<Ref name="NextSelectionUp">null</Ref>
+						<UDim2 name="Position">
+							<XS>1</XS>
+							<XO>8</XO>
+							<YS>0.5</YS>
+							<YO>0</YO>
+						</UDim2>
+						<float name="Rotation">0</float>
+						<bool name="Selectable">false</bool>
+						<Ref name="SelectionImageObject">null</Ref>
+						<int name="SelectionOrder">0</int>
+						<UDim2 name="Size">
+							<XS>0</XS>
+							<XO>32</XO>
+							<YS>0</YS>
+							<YO>32</YO>
+						</UDim2>
+						<token name="SizeConstraint">0</token>
+						<bool name="Visible">true</bool>
+						<int name="ZIndex">1</int>
+						<bool name="AutoLocalize">true</bool>
+						<Ref name="RootLocalizationTable">null</Ref>
+						<token name="SelectionBehaviorDown">0</token>
+						<token name="SelectionBehaviorLeft">0</token>
+						<token name="SelectionBehaviorRight">0</token>
+						<token name="SelectionBehaviorUp">0</token>
+						<bool name="SelectionGroup">false</bool>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">arrow-right</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae54000039cb</UniqueId>
+					</Properties>
+				</Item>
+				<Item class="Folder" referent="RBX26C2AE1C23C0496B95691F0B178007F3">
+					<Properties>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">Background</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae5400003aef</UniqueId>
+					</Properties>
+					<Item class="Frame" referent="RBXA02C809DCBF3425681346B6CD50DE6CC">
+						<Properties>
+							<token name="Style">0</token>
+							<bool name="Active">false</bool>
+							<Vector2 name="AnchorPoint">
+								<X>1</X>
+								<Y>0</Y>
+							</Vector2>
+							<token name="AutomaticSize">0</token>
+							<Color3 name="BackgroundColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<float name="BackgroundTransparency">0.800000012</float>
+							<Color3 name="BorderColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<token name="BorderMode">0</token>
+							<int name="BorderSizePixel">0</int>
+							<bool name="ClipsDescendants">false</bool>
+							<bool name="Draggable">false</bool>
+							<token name="InputSink">0</token>
+							<bool name="Interactable">true</bool>
+							<int name="LayoutOrder">0</int>
+							<Ref name="NextSelectionDown">null</Ref>
+							<Ref name="NextSelectionLeft">null</Ref>
+							<Ref name="NextSelectionRight">null</Ref>
+							<Ref name="NextSelectionUp">null</Ref>
+							<UDim2 name="Position">
+								<XS>0</XS>
+								<XO>0</XO>
+								<YS>0</YS>
+								<YO>0</YO>
+							</UDim2>
+							<float name="Rotation">0</float>
+							<bool name="Selectable">false</bool>
+							<Ref name="SelectionImageObject">null</Ref>
+							<int name="SelectionOrder">0</int>
+							<UDim2 name="Size">
+								<XS>0</XS>
+								<XO>1000</XO>
+								<YS>1</YS>
+								<YO>0</YO>
+							</UDim2>
+							<token name="SizeConstraint">0</token>
+							<bool name="Visible">true</bool>
+							<int name="ZIndex">0</int>
+							<bool name="AutoLocalize">true</bool>
+							<Ref name="RootLocalizationTable">null</Ref>
+							<token name="SelectionBehaviorDown">0</token>
+							<token name="SelectionBehaviorLeft">0</token>
+							<token name="SelectionBehaviorRight">0</token>
+							<token name="SelectionBehaviorUp">0</token>
+							<bool name="SelectionGroup">false</bool>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">13dc61f826c405520a8fae5400002413</UniqueId>
+							<string name="Name">LeftCover</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002490</UniqueId>
+						</Properties>
+					</Item>
+					<Item class="Frame" referent="RBXF0318A1F467048C4900523668EB71256">
+						<Properties>
+							<token name="Style">0</token>
+							<bool name="Active">false</bool>
+							<Vector2 name="AnchorPoint">
+								<X>0</X>
+								<Y>0</Y>
+							</Vector2>
+							<token name="AutomaticSize">0</token>
+							<Color3 name="BackgroundColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<float name="BackgroundTransparency">0.800000012</float>
+							<Color3 name="BorderColor3">
+								<R>0</R>
+								<G>0</G>
+								<B>0</B>
+							</Color3>
+							<token name="BorderMode">0</token>
+							<int name="BorderSizePixel">0</int>
+							<bool name="ClipsDescendants">false</bool>
+							<bool name="Draggable">false</bool>
+							<token name="InputSink">0</token>
+							<bool name="Interactable">true</bool>
+							<int name="LayoutOrder">2</int>
+							<Ref name="NextSelectionDown">null</Ref>
+							<Ref name="NextSelectionLeft">null</Ref>
+							<Ref name="NextSelectionRight">null</Ref>
+							<Ref name="NextSelectionUp">null</Ref>
+							<UDim2 name="Position">
+								<XS>1</XS>
+								<XO>0</XO>
+								<YS>0</YS>
+								<YO>0</YO>
+							</UDim2>
+							<float name="Rotation">0</float>
+							<bool name="Selectable">false</bool>
+							<Ref name="SelectionImageObject">null</Ref>
+							<int name="SelectionOrder">0</int>
+							<UDim2 name="Size">
+								<XS>0</XS>
+								<XO>1000</XO>
+								<YS>1</YS>
+								<YO>0</YO>
+							</UDim2>
+							<token name="SizeConstraint">0</token>
+							<bool name="Visible">true</bool>
+							<int name="ZIndex">0</int>
+							<bool name="AutoLocalize">true</bool>
+							<Ref name="RootLocalizationTable">null</Ref>
+							<token name="SelectionBehaviorDown">0</token>
+							<token name="SelectionBehaviorLeft">0</token>
+							<token name="SelectionBehaviorRight">0</token>
+							<token name="SelectionBehaviorUp">0</token>
+							<bool name="SelectionGroup">false</bool>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">13dc61f826c405520a8fae5400002413</UniqueId>
+							<string name="Name">RightCover</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">13dc61f826c405520a8fae5400002492</UniqueId>
+						</Properties>
+					</Item>
+				</Item>
+				<Item class="TextLabel" referent="RBX2213759B8E134BA7B6119F933F95C367">
+					<Properties>
+						<Font name="FontFace">
+							<Family><url>rbxasset://fonts/families/Roboto.json</url></Family>
+							<Weight>700</Weight>
+							<Style>Normal</Style>
+						</Font>
+						<float name="LineHeight">1</float>
+						<string name="LocalizationMatchIdentifier"></string>
+						<string name="LocalizationMatchedSourceText"></string>
+						<int name="MaxVisibleGraphemes">-1</int>
+						<string name="OpenTypeFeatures"></string>
+						<bool name="RichText">false</bool>
+						<string name="Text">256 x 256</string>
+						<Color3 name="TextColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<token name="TextDirection">0</token>
+						<bool name="TextScaled">true</bool>
+						<float name="TextSize">8</float>
+						<Color3 name="TextStrokeColor3">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<float name="TextStrokeTransparency">1</float>
+						<float name="TextTransparency">0.5</float>
+						<token name="TextTruncate">0</token>
+						<bool name="TextWrapped">true</bool>
+						<token name="TextXAlignment">2</token>
+						<token name="TextYAlignment">1</token>
+						<bool name="Active">false</bool>
+						<Vector2 name="AnchorPoint">
+							<X>0</X>
+							<Y>1</Y>
+						</Vector2>
+						<token name="AutomaticSize">0</token>
+						<Color3 name="BackgroundColor3">
+							<R>1</R>
+							<G>1</G>
+							<B>1</B>
+						</Color3>
+						<float name="BackgroundTransparency">1</float>
+						<Color3 name="BorderColor3">
+							<R>0</R>
+							<G>0</G>
+							<B>0</B>
+						</Color3>
+						<token name="BorderMode">0</token>
+						<int name="BorderSizePixel">0</int>
+						<bool name="ClipsDescendants">false</bool>
+						<bool name="Draggable">false</bool>
+						<token name="InputSink">0</token>
+						<bool name="Interactable">true</bool>
+						<int name="LayoutOrder">0</int>
+						<Ref name="NextSelectionDown">null</Ref>
+						<Ref name="NextSelectionLeft">null</Ref>
+						<Ref name="NextSelectionRight">null</Ref>
+						<Ref name="NextSelectionUp">null</Ref>
+						<UDim2 name="Position">
+							<XS>0</XS>
+							<XO>0</XO>
+							<YS>0</YS>
+							<YO>-4</YO>
+						</UDim2>
+						<float name="Rotation">0</float>
+						<bool name="Selectable">false</bool>
+						<Ref name="SelectionImageObject">null</Ref>
+						<int name="SelectionOrder">0</int>
+						<UDim2 name="Size">
+							<XS>1</XS>
+							<XO>0</XO>
+							<YS>0</YS>
+							<YO>18</YO>
+						</UDim2>
+						<token name="SizeConstraint">0</token>
+						<bool name="Visible">true</bool>
+						<int name="ZIndex">1</int>
+						<bool name="AutoLocalize">true</bool>
+						<Ref name="RootLocalizationTable">null</Ref>
+						<token name="SelectionBehaviorDown">0</token>
+						<token name="SelectionBehaviorLeft">0</token>
+						<token name="SelectionBehaviorRight">0</token>
+						<token name="SelectionBehaviorUp">0</token>
+						<bool name="SelectionGroup">false</bool>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">InputFrame</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae5400003b19</UniqueId>
+					</Properties>
+				</Item>
+			</Item>
+		</Item>
 	</Item>
 	<Item class="LocalizationService" referent="RBX3B4C7CB7BF1B46298C5D012BA251A9F8">
 		<Properties>
@@ -64637,20 +65271,6 @@ end
 			<UniqueId name="UniqueId">6b82b1954e6d52ef0a78c58900000392</UniqueId>
 		</Properties>
 	</Item>
-	<Item class="ServiceVisibilityService" referent="RBX646AF2084AA4488DAA6B7B0DCB779F75">
-		<Properties>
-			<BinaryString name="HiddenServices">AAAAAA==</BinaryString>
-			<BinaryString name="VisibleServices">AAAAAA==</BinaryString>
-			<BinaryString name="AttributesSerialize"></BinaryString>
-			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
-			<bool name="DefinesCapabilities">false</bool>
-			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
-			<string name="Name">ServiceVisibilityService</string>
-			<int64 name="SourceAssetId">-1</int64>
-			<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
-			<UniqueId name="UniqueId">6b82b1954e6d52ef0a78c589000003ae</UniqueId>
-		</Properties>
-	</Item>
 	<Item class="LuaWebService" referent="RBX847E700D07B34FCC86962B2C83F256C5">
 		<Properties>
 			<BinaryString name="AttributesSerialize"></BinaryString>
@@ -64716,20 +65336,60 @@ end
 	Handles project save/load for captured images and their shader data
 ]]
 
+local AssetService = game.AssetService
+
+local Image = require(script.Parent.Image)
 local Project = {}
 Project.__index = Project
 
+local function computeCenteredCrop(fullSize: Vector2, wantSize: Vector2): Rect?
+	if wantSize.X <= 0 or wantSize.Y <= 0 then
+		return nil
+	end
+
+	-- Requested size covers (or exceeds) the full capture — no crop needed
+	if wantSize.X >= fullSize.X and wantSize.Y >= fullSize.Y then
+		return nil
+	end
+
+	local clampedWant = wantSize:Min(fullSize)
+	local origin = Vector2.new(
+		math.floor((fullSize.X - clampedWant.X) / 2),
+		math.floor((fullSize.Y - clampedWant.Y) / 2)
+	)
+
+	return Rect.new(origin, origin + clampedWant)
+end
+
 function Project.new()
 	local self = setmetatable({}, Project)
-	self.images = {} -- {id = {data = imageData, shaders = {...}}}
+	self.images = {} -- {id = {data = imageData, image = Image, shaders = {...}}}
 	self.currentImage = nil
 	return self
 end
 
 function Project:createImage(imageData)
 	local id = #self.images + 1
+
+	local img = nil
+	if imageData.editableImage then
+		local fullSize = imageData.editableImage.Size
+		local crop = imageData.size and computeCenteredCrop(fullSize, imageData.size) or nil
+
+		img = Image.fromEditableImage(imageData.editableImage, crop)
+		if imageData.contentUri then
+			img:SetTemplateUri(imageData.contentUri)
+		end
+
+		pcall(function()
+			imageData.editableImage:Destroy()
+		end)
+		imageData.editableImage = nil
+	end
+
 	self.images[id] = {
 		data = imageData,
+		image = img,
 		shaders = {},
 		filters = {},
 		timestamp = os.time(),
@@ -64743,6 +65403,97 @@ function Project:getCurrentImage()
 		return nil
 	end
 	return self.images[self.currentImage]
+end
+
+function Project:_buildShadedImage()
+	local image = self:getCurrentImage()
+	if not image or not image.image then
+		return nil
+	end
+
+	-- Clone so shaders never mutate the stored original
+	local result = image.image:Clone()
+
+	for _, shaderEntry in ipairs(image.shaders) do
+		local shaderModule = shaderEntry.module
+		if shaderModule and shaderModule.apply then
+			local ok, shaded = pcall(shaderModule.apply, result)
+			if ok and shaded then
+				result = shaded
+			else
+				warn(
+					("Shader '%s' failed to apply: %s"):format(
+						tostring(shaderEntry.id),
+						tostring(shaded)
+					)
+				)
+			end
+		end
+	end
+
+	return result
+end
+
+function Project:applyCurrentImageToWorkspace()
+	local image = self:getCurrentImage()
+	if not image then
+		return nil
+	end
+
+	local shadedImage = self:_buildShadedImage()
+	if not shadedImage then
+		return nil
+	end
+
+	-- Build/refresh the EditableImage from the (possibly shaded) pixel buffer
+	local editableImage = AssetService:CreateEditableImage({ Size = shadedImage.size })
+	if not editableImage then
+		return nil
+	end
+	editableImage:WritePixelsBuffer(Vector2.zero, shadedImage.size, shadedImage.buffer)
+
+	-- Surface part to host the image
+	local surface = workspace:FindFirstChild("ViseCapturePlane") or Instance.new("Part")
+	surface.Name = "ViseCapturePlane"
+	surface.Anchored = true
+	surface.Material = Enum.Material.SmoothPlastic
+	surface.Color = Color3.new(0, 0, 0)
+	surface.Transparency = 1
+	surface.Size =
+		Vector3.new(math.max(1, shadedImage.size.X / 10), math.max(1, shadedImage.size.Y / 10), 0.2)
+	surface.CFrame = (workspace.CurrentCamera and workspace.CurrentCamera.CFrame or CFrame.new())
+		* CFrame.new(0, 0, -5)
+	surface.Parent = workspace
+
+	-- SurfaceGui + ImageLabel is the supported way to render an EditableImage
+	local surfaceGui = surface:FindFirstChild("ViseCaptureGui") :: SurfaceGui?
+	if not surfaceGui then
+		surfaceGui = Instance.new("SurfaceGui")
+		surfaceGui.Name = "ViseCaptureGui"
+		surfaceGui.Face = Enum.NormalId.Back
+		surfaceGui.Parent = surface
+	end
+
+	local imageLabel = surfaceGui:FindFirstChild("ViseCaptureImage") :: ImageLabel?
+	if not imageLabel then
+		imageLabel = Instance.new("ImageLabel")
+		imageLabel.Name = "ViseCaptureImage"
+		imageLabel.BackgroundTransparency = 1
+		imageLabel.Size = UDim2.fromScale(1, 1)
+		imageLabel.Parent = surfaceGui
+	end
+
+	imageLabel.ImageContent = Content.fromObject(editableImage)
+
+	-- Stash a reference so we can Destroy() the old one before regenerating next time
+	if image.editableImage then
+		pcall(function()
+			image.editableImage:Destroy()
+		end)
+	end
+	image.editableImage = editableImage
+
+	return imageLabel
 end
 
 function Project:addShader(shaderId, shaderModule)
@@ -64787,46 +65538,81 @@ return Project
 						<Content name="LinkedSource"><null></null></Content>
 						<ProtectedString name="Source"><![CDATA[--[[
 	Renderer Module
-	Uses Future for async image rendering and processing
+	Integrated from photobooth project
+	Uses Future for async image rendering and CaptureService for real screenshots
 ]]
 
+local AssetService = game:GetService("AssetService") :: AssetService
+local CaptureService = game:GetService("CaptureService") :: CaptureService
 local Future = require(script.Parent.Parent.Packages.Future)
 local Renderer = {}
 
-function Renderer.captureImage(screenSize, position)
-	-- Returns a Future that resolves with the captured image
-	return Future.new(function(resolve, reject)
-		-- Simulate capture - in real plugin this would use Studio's image capture API
-		local imageData = {
-			size = screenSize,
-			position = position,
-			timestamp = os.time(),
-		}
-		resolve(imageData)
+local function captureEditableImage()
+	local contentUriFuture = Future.new()
+	CaptureService:CaptureScreenshot(function(contentUri: string)
+		contentUriFuture:complete(contentUri)
 	end)
+
+	local contentUri = contentUriFuture:expect()
+	local editImage =
+		AssetService:CreateEditableImageAsync(Content.fromUri(contentUri)) :: EditableImage
+
+	return editImage, contentUri
+end
+
+function Renderer.captureImage(screenSize, position)
+	local size = typeof(screenSize) == "Vector2" and screenSize or Vector2.new(256, 256)
+	local capturePosition = typeof(position) == "Vector3" and position or Vector3.zero
+	local future = Future.new()
+
+	local success, editImage, contentUri = pcall(function()
+		return captureEditableImage()
+	end)
+
+	if not success or editImage == nil then
+		future:complete({
+			size = size,
+			position = capturePosition,
+			timestamp = os.time(),
+			source = "renderer.captureImage",
+			error = "Failed to capture screenshot",
+		})
+		return future
+	end
+
+	future:complete({
+		size = size,
+		position = capturePosition,
+		timestamp = os.time(),
+		source = "renderer.captureImage",
+		editableImage = editImage,
+		contentUri = contentUri,
+		viewportSize = workspace.CurrentCamera.ViewportSize,
+	})
+	return future
 end
 
 function Renderer.applyShader(imageData, shader)
-	-- Returns a Future for async shader application
-	return Future.new(function(resolve, reject)
-		if not shader or not shader.apply then
-			reject("Invalid shader")
-			return
-		end
-		local result = shader.apply(imageData)
-		resolve(result)
-	end)
+	local future = Future.new()
+	if not shader or not shader.apply then
+		future:complete({
+			error = "Invalid shader",
+			data = imageData,
+		})
+		return future
+	end
+
+	local result = shader.apply(imageData)
+	future:complete(result)
+	return future
 end
 
 function Renderer.applyShaderChain(imageData, shaders)
-	-- Apply multiple shaders in sequence
-	local future = Future.resolve(imageData)
+	local result = imageData
 	for _, shader in ipairs(shaders) do
-		future = future:andThen(function(data)
-			return Renderer.applyShader(data, shader)
-		end)
+		result = shader.apply(result)
 	end
-	return future
+	return Future.completed(result)
 end
 
 return Renderer
@@ -64903,27 +65689,42 @@ return ShaderApplier
 					<Item class="ModuleScript" referent="RBXE7A245BDC5C845CF8D5C282A067222EE">
 						<Properties>
 							<Content name="LinkedSource"><null></null></Content>
-							<ProtectedString name="Source"><![CDATA[local Constants = require("../external/Constants")
+							<ProtectedString name="Source"><![CDATA[local Project = require("../Project")
+local Renderer = require("../Renderer")
+local Constants = require("../external/Constants")
 local Types = require("../external/Types")
 
 local CaptureWidget = {}
 CaptureWidget.__index = CaptureWidget
 
 -- Services
-local RunService = game:GetService("RunService")
+local RunService = game.RunService
+local UserInputService: UserInputService = game.UserInputService
+local CoreGui: CoreGui = game.CoreGui
+
+-- Variables
+local ctx: Types.ctx = Constants._context
+local Value = ctx.fusion.Value
 
 -- Internal API
+CaptureWidget.CaptureSize = Value(Vector2.new(256, 256))
 
 -- Plugin
 
-function CaptureWidget:Bind(ctx: Types.ctx, toolbarButton, pluginRoot, pluginInstance)
+function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 	-- Setup
+	local Hydrate = ctx.fusion.Hydrate
 	local Computed = ctx.fusion.Computed
 	local unwrap = ctx.fusion.unwrap
-	local Value = ctx.fusion.Value
+	local themeProvider = ctx.util.themeProvider
+
 	local Children = ctx.fusion.Children
 	local OnChange = ctx.fusion.OnChange
+	local OnEvent = ctx.fusion.OnEvent
 	local Observer = ctx.fusion.Observer
+	local Cleanup = ctx.fusion.Cleanup
+	local cleanup = ctx.fusion.cleanup
+	local New = ctx.fusion.New
 
 	local Label = ctx.components.Label
 	local MainButton = ctx.components.MainButton
@@ -64931,28 +65732,384 @@ function CaptureWidget:Bind(ctx: Types.ctx, toolbarButton, pluginRoot, pluginIns
 	local Checkbox = ctx.components.Checkbox
 	local Seperator = ctx.components.Seperator
 	local Loading = ctx.components.Loading
+	local LimitedTextInput = ctx.components.LimitedTextInput
+	local Paragraph = ctx.components.Paragraph
 	local VerticalCollapsibleSection = ctx.components.VerticalCollapsibleSection
 	local ScrollFrame = ctx.components.ScrollFrame
+	local PlainCheckbox = ctx.components.PlainCheckbox
 	local makeCard = ctx.ui.makeCard
 	local makeSectionHeader = ctx.ui.makeSectionHeader
+	local makeCollapsible = ctx.ui.makeCollapsible
 
 	local Widget = ctx.studio.Widget
 	local AddWidget = ctx.studio.AddWidget
 
-	-- State
+	local Trove = ctx.modules.Trove.new()
+
+	-- Variables
+	local mousePos = UserInputService:GetMouseLocation()
+	local isDragging = false
+	local mousePosStart = nil
+	local dragStartSize = Vector2.new(256, 256)
+	local offsetFunc = nil
+
+	Project = Project.new()
+
+	-- States
 	local widgetsEnabled = Value(false)
+	local captureSize = CaptureWidget.CaptureSize
+	local targetCaptureSize = Value(captureSize:get())
+	dragStartSize = captureSize:get()
+
+	-- Constants
+	local CAPTURE_PAD_X, CAPTURE_PAD_Y = 10, 10
+
+	-- Capture Screen
+
+	local Camera = workspace.CurrentCamera or workspace.Camera
+
+	local function viewportChanged()
+		local viewport = Camera.ViewportSize
+		local target = targetCaptureSize:get()
+
+		local rawsize = Vector2.new(
+			math.min(target.X, viewport.X - CAPTURE_PAD_X),
+			math.min(target.Y, viewport.Y - CAPTURE_PAD_Y)
+		)
+
+		captureSize:set(rawsize)
+	end
+
+	local function updateDrag()
+		if isDragging and offsetFunc and mousePosStart then
+			local currentPos = UserInputService:GetMouseLocation()
+			offsetFunc(2 * (currentPos - mousePosStart))
+		end
+	end
+
+	local function inputEnded(input: InputObject)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and isDragging then
+			isDragging = false
+			mousePosStart = nil
+			offsetFunc = nil
+		end
+	end
+
+	local function BackgroundSpacer(props)
+		local Filler = props.NoFill and {}
+			or New("UIFlexItem")({
+				FlexMode = Enum.UIFlexMode.Fill,
+			})
+
+		return New("Frame")({
+			BackgroundColor3 = props.Color or Color3.new(0, 0, 0),
+			BackgroundTransparency = props.Transparency or 0.8,
+			LayoutOrder = props.Order,
+			Position = props.Position,
+			Size = props.Size or UDim2.fromScale(1, 1),
+			AnchorPoint = props.AnchorPoint,
+
+			[Children] = { Filler },
+		})
+	end
+
+	local function DraggableIcon(props)
+		return New("ImageButton")({
+			Image = props.Image,
+
+			Position = props.Position,
+			AnchorPoint = props.AnchorPoint,
+
+			Active = true,
+			Selectable = true,
+
+			BackgroundTransparency = 1,
+			Size = props.Size,
+			ImageTransparency = props.Transparency,
+			ImageRectOffset = props.RectOffset,
+			ImageRectSize = props.RectSize,
+
+			[OnEvent("InputBegan")] = function(input: InputObject)
+				if isDragging then
+					return
+				end
+				if input.UserInputType == Enum.UserInputType.MouseButton1 then
+					mousePosStart = UserInputService:GetMouseLocation()
+					dragStartSize = captureSize:get()
+					offsetFunc = props.OnDrag
+					isDragging = true
+				end
+			end,
+		})
+	end
+
+	-- Connections
+	Trove:Connect(Camera:GetPropertyChangedSignal("ViewportSize"), viewportChanged)
+	Trove:Connect(RunService.RenderStepped, updateDrag)
+	Trove:Connect(UserInputService.InputEnded, inputEnded)
+
+	-- External
+	local MainGui = New("ScreenGui")({
+		DisplayOrder = 200,
+		Enabled = widgetsEnabled,
+
+		ClipToDeviceSafeArea = false,
+		SafeAreaCompatibility = Enum.SafeAreaCompatibility.None,
+		ScreenInsets = Enum.ScreenInsets.None,
+		IgnoreGuiInset = true,
+		ResetOnSpawn = false,
+
+		Name = "vise_capture_gui",
+
+		[Children] = {
+			New("UIListLayout")({
+				FillDirection = Enum.FillDirection.Vertical,
+				HorizontalAlignment = Enum.HorizontalAlignment.Center,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+			}),
+
+			BackgroundSpacer({
+				Order = 0,
+			}),
+
+			-- Window
+			New("Frame")({
+				Size = Computed(function()
+					local rawsize = captureSize:get()
+					return UDim2.fromOffset(rawsize.X, rawsize.Y)
+				end),
+				BackgroundTransparency = 1,
+				LayoutOrder = 1,
+
+				[Children] = {
+					BackgroundSpacer({
+						NoFill = true,
+						AnchorPoint = Vector2.new(1, 0),
+
+						Size = UDim2.new(0, 1000, 1, 0),
+					}),
+
+					BackgroundSpacer({
+						NoFill = true,
+						Position = UDim2.fromScale(1, 0),
+
+						Size = UDim2.new(0, 1000, 1, 0),
+					}),
+
+					New("UIStroke")({
+						Color = Color3.new(0, 0, 0),
+						Thickness = 2,
+						Transparency = 0.8,
+					}),
+
+					New("TextLabel")({
+						Text = Computed(function()
+							local rawsize = captureSize:get()
+							return `{rawsize.X} x {rawsize.Y}`
+						end),
+
+						AutomaticSize = Enum.AutomaticSize.X,
+						AnchorPoint = Vector2.new(0.5, 1),
+						Size = UDim2.new(0, 0, 0, 18),
+						Position = UDim2.new(0.5, 0, 0, -6),
+
+						TextTransparency = 0.3,
+						TextColor3 = Color3.new(1, 1, 1),
+						FontFace = Font.fromName(
+							"Roboto",
+							Enum.FontWeight.Bold,
+							Enum.FontStyle.Normal
+						),
+
+						BackgroundTransparency = 1,
+						TextSize = 18,
+						TextScaled = false,
+					}),
+
+					DraggableIcon({
+						Image = "rbxassetid://16898614020",
+						RectOffset = Vector2.new(0, 257),
+						RectSize = Vector2.new(256, 256),
+						Transparency = 0,
+
+						Position = UDim2.fromScale(1, 1),
+						Size = UDim2.fromOffset(32, 32),
+						AnchorPoint = Vector2.new(0, 0),
+
+						OnDrag = function(offset: Vector2)
+							local nextSize = dragStartSize + offset
+							local viewport = Camera.ViewportSize
+							local maxSize = Vector2.new(
+								math.max(16, viewport.X - CAPTURE_PAD_X),
+								math.max(16, viewport.Y - CAPTURE_PAD_Y)
+							)
+
+							nextSize = Vector2.new(
+								math.floor(math.clamp(nextSize.X, 16, maxSize.X)),
+								math.floor(math.clamp(nextSize.Y, 16, maxSize.Y))
+							)
+
+							targetCaptureSize:set(nextSize)
+							captureSize:set(nextSize)
+						end,
+					}),
+				},
+			}),
+
+			BackgroundSpacer({
+				Order = 2,
+			}),
+		},
+	})
+
+	MainGui.Parent = CoreGui
+	viewportChanged()
+
+	local function HorizontalSection(props)
+		return makeCard({
+			Padding = 3,
+			PaddingLeft = 8,
+			Size = UDim2.new(1, 0, 0, props.Height or 28),
+			NoLayout = true,
+			--DontConstrain = true,
+			YScaling = NumberRange.new(28, 9999),
+			UseBorder = true,
+			Transparency = 0,
+			CornerRadius = 2,
+			Color = themeProvider:GetColor(Enum.StudioStyleGuideColor.MainBackground),
+			Children = {
+				New("UIListLayout")({
+					FillDirection = Enum.FillDirection.Horizontal,
+					Padding = UDim.new(0, 4),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					HorizontalAlignment = Enum.HorizontalAlignment.Center,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+				}),
+
+				props.Children,
+			},
+		})
+	end
+
+	local function PropertySection(props)
+		return HorizontalSection({
+			Height = props.Height,
+			Scaled = props.Scaled,
+
+			Children = {
+				Label({
+					Text = props.Title or "Title",
+					FontFace = props.FontFace
+						or Font.fromName("SourceSans", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextTruncate = Enum.TextTruncate.SplitWord,
+					NoScaling = true,
+					Size = UDim2.fromScale(0.5, 1),
+				}),
+
+				Seperator({ IsVertical = true, Thickness = 1 }),
+
+				props.Children,
+			},
+		})
+	end
 
 	-- Widget
-
 	AddWidget({
 		Name = `Capture | {Constants.NameId}`,
 
 		Enabled = widgetsEnabled,
 		InitialDockTo = Enum.InitialDockState.Float,
-		FloatingSize = Vector2.new(400, 260),
-		ScrollingEnabled = false,
+		FloatingSize = Vector2.new(280, 360),
+		ScrollingEnabled = true,
 
 		Children = { -- do not replace with [Children]
+			makeCollapsible({
+				Text = "Camera Configurations",
+				Collapsed = true,
+				Children = { -- do not replace with [Children]
+					Checkbox({
+						Text = "Render Skybox",
+						Enabled = true,
+						Value = false,
+						OnChange = function(value) end,
+					}),
+
+					Seperator({}),
+
+					PropertySection({
+						Title = "Property Title",
+
+						Children = {
+							TextInput({
+								PlaceholderText = "Placeholder Text",
+								Text = "",
+
+								Size = UDim2.fromScale(1, 1),
+								[OnChange("Text")] = function(newText)
+									print("Text:", newText)
+								end,
+
+								[Children] = {
+									New("UIFlexItem")({
+										FlexMode = Enum.UIFlexMode.Fill,
+									}),
+								},
+							}),
+						},
+					}),
+
+					PropertySection({
+						Title = "Property Title",
+
+						Children = {
+							PlainCheckbox({
+
+								[Children] = {
+									New("UIFlexItem")({
+										FlexMode = Enum.UIFlexMode.Fill,
+									}),
+								},
+							}),
+						},
+					}),
+
+					MainButton({
+						Text = "Capture",
+						Activated = function()
+							print("[Vise] Capturing image...")
+
+							local position = Camera and Camera.CFrame and Camera.CFrame.Position
+								or Vector3.zero
+							local captureFuture = Renderer.captureImage(captureSize:get(), position)
+
+							local success, imageData = pcall(function()
+								return captureFuture:expect()
+							end)
+
+							if success and imageData and not imageData.error then
+								local imageId = Project:createImage(imageData)
+								Project:applyCurrentImageToWorkspace()
+								print("[Vise] Capture complete!", imageId)
+								return
+							end
+
+							warn(
+								"[Vise] Capture failed:",
+								success and imageData and imageData.error or "unknown error"
+							)
+							local fallbackId = Project:createImage({
+								size = captureSize:get(),
+								position = position,
+								timestamp = os.time(),
+								source = "fallback",
+							})
+							Project:applyCurrentImageToWorkspace()
+							print("[Vise] Capture fallback applied!", fallbackId)
+						end,
+					}),
+				},
+			}),
 		},
 	})
 
@@ -64962,6 +66119,8 @@ function CaptureWidget:Bind(ctx: Types.ctx, toolbarButton, pluginRoot, pluginIns
 
 	return function()
 		widgetsEnabled:set(false)
+		Trove:Destroy()
+		cleanup(MainGui)
 	end
 end
 
@@ -64976,6 +66135,204 @@ return CaptureWidget
 							<int64 name="SourceAssetId">-1</int64>
 							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
 							<UniqueId name="UniqueId">208221cc9007a4bd0a8e571c00003286</UniqueId>
+						</Properties>
+					</Item>
+					<Item class="ModuleScript" referent="RBX72EC5B0F8C884DC78CF397A796D814D9">
+						<Properties>
+							<Content name="LinkedSource"><null></null></Content>
+							<ProtectedString name="Source"><![CDATA[local Constants = require("../external/Constants")
+local Types = require("../external/Types")
+
+local DesignerWidget = {}
+DesignerWidget.__index = DesignerWidget
+
+-- Services
+local RunService = game.RunService
+local UserInputService: UserInputService = game.UserInputService
+local CoreGui: CoreGui = game.CoreGui
+
+-- Variables
+local ctx: Types.ctx = Constants._context
+local Value = ctx.fusion.Value
+
+-- Internal API
+
+-- Plugin
+
+function DesignerWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
+	-- Setup
+	local Hydrate = ctx.fusion.Hydrate
+	local Computed = ctx.fusion.Computed
+	local unwrap = ctx.fusion.unwrap
+
+	local Children = ctx.fusion.Children
+	local OnChange = ctx.fusion.OnChange
+	local OnEvent = ctx.fusion.OnEvent
+	local Observer = ctx.fusion.Observer
+	local Cleanup = ctx.fusion.Cleanup
+	local cleanup = ctx.fusion.cleanup
+	local New = ctx.fusion.New
+
+	local Label = ctx.components.Label
+	local MainButton = ctx.components.MainButton
+	local TextInput = ctx.components.TextInput
+	local Checkbox = ctx.components.Checkbox
+	local Seperator = ctx.components.Seperator
+	local Loading = ctx.components.Loading
+	local VerticalCollapsibleSection = ctx.components.VerticalCollapsibleSection
+	local ScrollFrame = ctx.components.ScrollFrame
+
+	local makeCard = ctx.ui.makeCard
+	local makeSectionHeader = ctx.ui.makeSectionHeader
+	local makeCollapsible = ctx.ui.makeCollapsible
+
+	local Widget = ctx.studio.Widget
+	local AddWidget = ctx.studio.AddWidget
+
+	local Trove = ctx.modules.Trove.new()
+
+	-- Variables
+
+	-- States
+	local widgetsEnabled = Value(false)
+
+	-- Components
+
+	-- Connections
+
+	-- Widget
+	AddWidget({
+		Name = `Designer | {Constants.NameId}`,
+
+		Enabled = widgetsEnabled,
+		InitialDockTo = Enum.InitialDockState.Float,
+		FloatingSize = Vector2.new(280, 360),
+		ScrollingEnabled = true,
+
+		Children = { -- do not replace with [Children]
+		},
+	})
+
+	toolbarButton.Click:Connect(function()
+		widgetsEnabled:set(not widgetsEnabled:get())
+	end)
+
+	return function()
+		widgetsEnabled:set(false)
+		Trove:Destroy()
+	end
+end
+
+return DesignerWidget
+]]></ProtectedString>
+							<string name="ScriptGuid">{D20C1AAA-2ECA-404C-9F68-D24FEBBF84DE}</string>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+							<string name="Name">DesignerWidget</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">2ef95d7ccf7b58190a90c428000027c1</UniqueId>
+						</Properties>
+					</Item>
+					<Item class="ModuleScript" referent="RBXE457D455EAB14B8E96FE4CF18809744B">
+						<Properties>
+							<Content name="LinkedSource"><null></null></Content>
+							<ProtectedString name="Source"><![CDATA[local Constants = require("../external/Constants")
+local Types = require("../external/Types")
+
+local ShaderWidget = {}
+ShaderWidget.__index = ShaderWidget
+
+-- Services
+local RunService = game.RunService
+local UserInputService: UserInputService = game.UserInputService
+local CoreGui: CoreGui = game.CoreGui
+
+-- Variables
+local ctx: Types.ctx = Constants._context
+local Value = ctx.fusion.Value
+
+-- Internal API
+
+-- Plugin
+
+function ShaderWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
+	-- Setup
+	local Hydrate = ctx.fusion.Hydrate
+	local Computed = ctx.fusion.Computed
+	local unwrap = ctx.fusion.unwrap
+
+	local Children = ctx.fusion.Children
+	local OnChange = ctx.fusion.OnChange
+	local OnEvent = ctx.fusion.OnEvent
+	local Observer = ctx.fusion.Observer
+	local Cleanup = ctx.fusion.Cleanup
+	local cleanup = ctx.fusion.cleanup
+	local New = ctx.fusion.New
+
+	local Label = ctx.components.Label
+	local MainButton = ctx.components.MainButton
+	local TextInput = ctx.components.TextInput
+	local Checkbox = ctx.components.Checkbox
+	local Seperator = ctx.components.Seperator
+	local Loading = ctx.components.Loading
+	local VerticalCollapsibleSection = ctx.components.VerticalCollapsibleSection
+	local ScrollFrame = ctx.components.ScrollFrame
+
+	local makeCard = ctx.ui.makeCard
+	local makeSectionHeader = ctx.ui.makeSectionHeader
+	local makeCollapsible = ctx.ui.makeCollapsible
+
+	local Widget = ctx.studio.Widget
+	local AddWidget = ctx.studio.AddWidget
+
+	local Trove = ctx.modules.Trove.new()
+
+	-- Variables
+
+	-- States
+	local widgetsEnabled = Value(false)
+
+	-- Components
+
+	-- Connections
+
+	-- Widget
+	AddWidget({
+		Name = `Shader Editor | {Constants.NameId}`,
+
+		Enabled = widgetsEnabled,
+		InitialDockTo = Enum.InitialDockState.Top,
+		FloatingSize = Vector2.new(280, 360),
+		ScrollingEnabled = true,
+
+		Children = { -- do not replace with [Children]
+		},
+	})
+
+	toolbarButton.Click:Connect(function()
+		widgetsEnabled:set(not widgetsEnabled:get())
+	end)
+
+	return function()
+		widgetsEnabled:set(false)
+		Trove:Destroy()
+	end
+end
+
+return ShaderWidget
+]]></ProtectedString>
+							<string name="ScriptGuid">{EAF7EF38-587B-4C90-A1EA-53EAD1D2C8BC}</string>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+							<string name="Name">ShaderWidget</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">2ef95d7ccf7b58190a90c428000027c5</UniqueId>
 						</Properties>
 					</Item>
 				</Item>
@@ -65121,9 +66478,11 @@ return GrayscaleShader
 							<Content name="LinkedSource"><null></null></Content>
 							<ProtectedString name="Source"><![CDATA[-- Services
 local HttpService = game:GetService("HttpService")
+local LocalizationService = game:GetService("LocalizationService")
 
 -- Context
 local Widget = require("../../Components/PluginComponents/Widget")
+local BoxBorder = require("../../Components/StudioComponents/BoxBorder")
 
 local Checkbox = require("../../Components/StudioComponents/Checkbox")
 local MainButton = require("../../Components/StudioComponents/MainButton")
@@ -65140,8 +66499,10 @@ local Loading = require("../../Components/StudioComponents/Loading")
 local ClassIcon = require("../../Components/StudioComponents/ClassIcon")
 local IconButton = require("../../Components/StudioComponents/IconButton")
 local LimitedTextInput = require("../../Components/StudioComponents/LimitedTextInput")
+local PlainCheckbox = require("../../Components/StudioComponents/PlainCheckbox")
 local ProgressBar = require("../../Components/StudioComponents/ProgressBar")
 local Slider = require("../../Components/StudioComponents/Slider")
+local PlainCheckbox = require("../../Components/StudioComponents/PlainCheckbox")
 
 local Fusion = require("../../Packages/_Index/elttob_fusion@0.2.0/fusion") -- explict
 local New = Fusion.New
@@ -65151,11 +66512,67 @@ local OnChange = Fusion.OnChange
 local OnEvent = Fusion.OnEvent
 local Observer = Fusion.Observer
 local Computed = Fusion.Computed
+local Hydrate = Fusion.Hydrate
+local Cleanup = Fusion.Cleanup
+local cleanup = Fusion.cleanup
 
 local unwrap = require("../../Components/StudioComponents/Util/unwrap")
+local themeProvider = require("../../Components/StudioComponents/Util/themeProvider")
+
+local function makeCard(props)
+	local y: NumberRange? = props.YScaling
+	local padding = props.Padding or 10
+	local layout = props.NoLayout and {}
+		or New("UIListLayout")({
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 8),
+		})
+	local size = props.Size
+	local border = props.UseBorder
+			and New("UIStroke")({
+				Thickness = 1,
+				Color = props.BorderColor
+					or themeProvider:GetColor(Enum.StudioStyleGuideColor.Border),
+				Transparency = props.Transparency,
+			})
+		or {}
+
+	local sizeconstraint = props.DontConstrain and {}
+		or New("UISizeConstraint")({
+			MaxSize = Vector2.new(9999, y and y.Max or 9999),
+			MinSize = Vector2.new(0, y and y.Min or 0),
+		})
+
+	local corner = props.CornerRadius or 2
+	local color = props.Color or Color3.fromRGB(0, 0, 0)
+
+	return New("Frame")({
+		Size = size or UDim2.fromScale(1, 0),
+		AutomaticSize = size and Enum.AutomaticSize.None or Enum.AutomaticSize.Y,
+		BackgroundTransparency = props.Transparency or 0.7,
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		[Children] = {
+			border,
+			New("UICorner")({ CornerRadius = UDim.new(0, corner) }),
+			New("UIPadding")({
+				PaddingLeft = UDim.new(0, props.PaddingLeft or props.XPadding or padding),
+				PaddingRight = UDim.new(0, props.XPadding or padding),
+				PaddingTop = UDim.new(0, props.YPadding or padding),
+				PaddingBottom = UDim.new(0, props.YPadding or padding),
+			}),
+			layout,
+
+			sizeconstraint,
+			props.Children,
+		},
+	})
+end
 
 local ctx = {
 	fusion = {
+		Hydrate = Hydrate,
+
 		New = New,
 		Value = Value,
 		Children = Children,
@@ -65163,7 +66580,13 @@ local ctx = {
 		OnEvent = OnEvent,
 		Observer = Observer,
 		Computed = Computed,
+		Cleanup = Cleanup,
+		cleanup = cleanup,
 		unwrap = unwrap,
+	},
+
+	util = {
+		themeProvider = themeProvider,
 	},
 
 	studio = {
@@ -65207,6 +66630,7 @@ local ctx = {
 	},
 
 	components = {
+		PlainCheckbox = PlainCheckbox,
 		Checkbox = Checkbox,
 		MainButton = MainButton,
 		ScrollFrame = ScrollFrame,
@@ -65226,33 +66650,31 @@ local ctx = {
 	},
 
 	ui = {
-		makeCard = function(contents, y: NumberRange?)
-			return New("Frame")({
-				Size = UDim2.fromScale(1, 0),
-				AutomaticSize = Enum.AutomaticSize.Y,
-				BackgroundTransparency = 0.7,
-				BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-				BorderSizePixel = 0,
-				[Children] = {
-					New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
-					New("UIPadding")({
-						PaddingLeft = UDim.new(0, 10),
-						PaddingRight = UDim.new(0, 10),
-						PaddingTop = UDim.new(0, 10),
-						PaddingBottom = UDim.new(0, 10),
+		makeCollapsible = function(props)
+			return makeCard({
+				UseBorder = true,
+				Padding = 0,
+				Transparency = 0,
+				Color = themeProvider:GetColor(Enum.StudioStyleGuideColor.MainBackground),
+				BorderColor = themeProvider:GetColor(Enum.StudioStyleGuideColor.Light),
+
+				Children = VerticalCollapsibleSection({
+					Text = props.Text,
+					Collapsed = props.Collapsed,
+					Enabled = props.Enabled,
+
+					Padding = UDim.new(0, props.Padding or 4),
+
+					[Children] = makeCard({
+						Transparency = 1,
+						Padding = props.Padding or 4,
+						Children = props.Children,
 					}),
-					New("UIListLayout")({
-						SortOrder = Enum.SortOrder.LayoutOrder,
-						Padding = UDim.new(0, 8),
-					}),
-					New("UISizeConstraint")({
-						MaxSize = Vector2.new(9999, y and y.Max or 9999),
-						MinSize = Vector2.new(0, y and y.Min or 0),
-					}),
-					table.unpack(contents),
-				},
+				}),
 			})
 		end,
+
+		makeCard = makeCard,
 
 		makeSectionHeader = function(text)
 			return Label({
@@ -65288,7 +66710,13 @@ local ctx = {
 			})
 		end,
 	},
+
+	modules = {
+		Trove = require("../../Packages/Trove"),
+	},
 }
+
+-- Define
 
 local Constants = {
 	-- public
@@ -65336,6 +66764,148 @@ return {}
 							<UniqueId name="UniqueId">208221cc9007a4bd0a8e571c000040ba</UniqueId>
 						</Properties>
 					</Item>
+				</Item>
+				<Item class="ModuleScript" referent="RBXC029C0D748B443C280A451789FB4B493">
+					<Properties>
+						<Content name="LinkedSource"><null></null></Content>
+						<ProtectedString name="Source"><![CDATA[--!strict
+--[[
+	Image Utility Module
+	Adapted from photobooth project for pixel buffer manipulation
+]]
+
+local ImageStatic = {}
+
+local ImageClass = {}
+ImageClass.__index = ImageClass
+ImageClass.ClassName = "Image"
+
+export type Image = typeof(setmetatable(
+	{} :: {
+		buffer: buffer,
+		size: Vector2,
+		templateUri: string?,
+	},
+	ImageClass
+))
+
+-- Constructors
+
+function ImageStatic.fromBuffer(buffer: buffer, size: Vector2)
+	local self = setmetatable({} :: any, ImageClass) :: Image
+
+	self.buffer = buffer
+	self.size = size
+
+	return self
+end
+
+function ImageStatic.fromSize(size: Vector2)
+	return ImageStatic.fromBuffer(buffer.create(size.X * size.Y * 4), size)
+end
+
+function ImageStatic.fromEditableImage(editableImage: EditableImage, crop: Rect?)
+	local fullSize = editableImage.Size
+	local origin = if crop then crop.Min:Min(fullSize) else Vector2.zero
+	local cropSize = if crop then (crop.Max - crop.Min):Min(fullSize) else fullSize
+
+	local resultBuffer = editableImage:ReadPixelsBuffer(origin, cropSize)
+	return ImageStatic.fromBuffer(resultBuffer, cropSize)
+end
+
+function ImageStatic.fromRGBA255(r: number, g: number, b: number, a: number, size: Vector2)
+	local img = ImageStatic.fromBuffer(buffer.create(size.X * size.Y * 4), size)
+	for x = 1, size.X do
+		for y = 1, size.Y do
+			local pixelIndex = img:GetPixelIndex(x, y)
+			img:SetRGBA255(pixelIndex, r, g, b, a)
+		end
+	end
+	return img
+end
+
+-- Public Methods
+
+function ImageClass.Clone(self: Image)
+	local copyBuffer = buffer.create(buffer.len(self.buffer))
+	buffer.copy(copyBuffer, 0, self.buffer, 0)
+	local copy = ImageStatic.fromBuffer(copyBuffer, self.size)
+	copy.templateUri = self.templateUri
+	return copy
+end
+
+function ImageClass.Crop(self: Image, rect: Rect)
+	local size = rect.Max - rect.Min
+
+	local clampedWidth = math.min(rect.Min.X + size.X, self.size.X) - rect.Min.X
+	local clampedHeight = math.min(rect.Min.Y + size.Y, self.size.Y) - rect.Min.Y
+	local targetBuffer = buffer.create(clampedWidth * clampedHeight * 4)
+
+	for y = 1, clampedHeight do
+		local sourceOffset = rect.Min.X + (rect.Min.Y + y - 1) * self.size.X
+		local targetOffset = (y - 1) * clampedWidth
+		buffer.copy(targetBuffer, targetOffset * 4, self.buffer, sourceOffset * 4, clampedWidth * 4)
+	end
+
+	return ImageStatic.fromBuffer(targetBuffer, Vector2.new(clampedWidth, clampedHeight))
+end
+
+function ImageClass.GetSize(self: Image)
+	return self.size
+end
+
+function ImageClass.GetWidth(self: Image)
+	return self.size.X
+end
+
+function ImageClass.GetHeight(self: Image)
+	return self.size.Y
+end
+
+function ImageClass.GetPixelIndex(self: Image, x: number, y: number)
+	return (x - 1) + (y - 1) * self.size.X
+end
+
+function ImageClass.GetRGBA255(self: Image, pixelIndex: number)
+	local offset = pixelIndex * 4
+	local r = buffer.readu8(self.buffer, offset)
+	local g = buffer.readu8(self.buffer, offset + 1)
+	local b = buffer.readu8(self.buffer, offset + 2)
+	local a = buffer.readu8(self.buffer, offset + 3)
+	return r, g, b, a
+end
+
+function ImageClass.SetRGBA255(
+	self: Image,
+	pixelIndex: number,
+	r: number,
+	g: number,
+	b: number,
+	a: number
+)
+	local offset = pixelIndex * 4
+	buffer.writeu8(self.buffer, offset, r)
+	buffer.writeu8(self.buffer, offset + 1, g)
+	buffer.writeu8(self.buffer, offset + 2, b)
+	buffer.writeu8(self.buffer, offset + 3, a)
+end
+
+function ImageClass.SetTemplateUri(self: Image, uri: string)
+	self.templateUri = uri
+end
+
+return table.freeze(ImageStatic) :: typeof(ImageStatic)
+]]></ProtectedString>
+						<string name="ScriptGuid">{86D5EBC7-3554-4C57-946A-ADB79569AEC1}</string>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">Image</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">2ef95d7ccf7b58190a90c42800005442</UniqueId>
+					</Properties>
 				</Item>
 			</Item>
 			<Item class="Folder" referent="12">
@@ -81884,6 +83454,22 @@ return xtypeof]]></ProtectedString>
 						<UniqueId name="UniqueId">208221cc9007a4bd0a8e571c00003295</UniqueId>
 					</Properties>
 				</Item>
+				<Item class="ModuleScript" referent="RBX714397A6C246467C925847E6E7801051">
+					<Properties>
+						<Content name="LinkedSource"><null></null></Content>
+						<ProtectedString name="Source"><![CDATA[return require(script.Parent["_Index"]["sleitnick_trove@1.5.1"]["trove"])
+]]></ProtectedString>
+						<string name="ScriptGuid">{42F327EE-45DD-4849-879A-100C388415EC}</string>
+						<BinaryString name="AttributesSerialize"></BinaryString>
+						<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+						<bool name="DefinesCapabilities">false</bool>
+						<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+						<string name="Name">Trove</string>
+						<int64 name="SourceAssetId">-1</int64>
+						<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+						<UniqueId name="UniqueId">13dc61f826c405520a8fae5400003be5</UniqueId>
+					</Properties>
+				</Item>
 			</Item>
 			<Item class="Script" referent="39">
 				<Properties>
@@ -81894,12 +83480,14 @@ return xtypeof]]></ProtectedString>
 ]]
 
 -- Services
+local Preloaded = game:GetService("Preloaded")
 local RunService = game:GetService("RunService")
 
 -- Setup
 
 const pluginRoot = script.Parent
 const toolbar = plugin:CreateToolbar("Vise")
+local cleanedUp = false
 
 -- Create toolbar buttons
 const captureButton = toolbar:CreateButton("Capture", "Capture a screenshot of the viewport.", "")
@@ -81916,14 +83504,25 @@ local Constants = require("./Modules/external/Constants")
 local ctx = Constants._context
 
 -- Variables
---local CaptureWidget = require("./Modules/widgets/CaptureWidget")
-
 const ToBind = {
 	{
 		module = require("./Modules/widgets/CaptureWidget"),
+		cleanup = "",
 		toolbar = captureButton,
 	},
+	{
+		module = require("./Modules/widgets/DesignerWidget"),
+		cleanup = "",
+		toolbar = iconMakerButton,
+	},
+	{
+		module = require("./Modules/widgets/ShaderWidget"),
+		cleanup = "",
+		toolbar = shaderEditButton,
+	},
 }
+
+local Binded = {}
 
 -- function Editor:performCapture()
 -- 	print("[Vise] Capturing image...")
@@ -81937,11 +83536,68 @@ const ToBind = {
 -- 	print("[Vise] Capture complete!")
 -- end
 
--- Initialize
-if RunService:IsStudio() and RunService:IsEdit() then
-	for _, data in ipairs(ToBind) do
-		data.module:Bind(ctx, data.toolbar, pluginRoot, plugin)
+-- Utility
+
+local function resolvePath(path, data)
+	if typeof(data) ~= "table" then
+		return data
 	end
+
+	local segments = string.split(path, "/")
+	local current = data
+	for _, segment in ipairs(segments) do
+		if current[segment] then
+			current = current[segment]
+		else
+			return nil
+		end
+	end
+	return current
+end
+
+-- Functions
+
+local function Cleanup()
+	cleanedUp = true
+	for _, data in ipairs(Binded) do
+		data.cleanup()
+	end
+
+	print("--- CLEANED UP ---")
+end
+
+-- Initialize
+plugin.Unloading:Connect(Cleanup)
+
+if cleanedUp then
+	return
+end
+
+print("--- STARTING PLUGIN ---")
+
+if RunService:IsStudio() and RunService:IsEdit() then
+	for i, data in ipairs(ToBind) do
+		local bind = data.module:Bind(ctx, data.toolbar, pluginRoot, plugin)
+		local cleanupFunc = data.cleanup == "" and bind or nil
+
+		if not cleanupFunc then
+			local func = resolvePath(data.cleanup, typeof(bind) == "function" and bind() or bind)
+			if func and typeof(func) == "function" then
+				cleanupFunc = func
+			end
+
+			continue -- if no cleanup is needed, just skip..
+		end
+
+		print(`Binded with cleanup at index {i}.`)
+
+		Binded[i] = {
+			bind = bind,
+			cleanup = cleanupFunc,
+		}
+	end
+
+	print("--- PLUGIN STARTED! --")
 end
 ]]></ProtectedString>
 					<bool name="Disabled">false</bool>
@@ -83736,35 +85392,48 @@ local Hydrate = Fusion.Hydrate
 
 local COMPONENT_ONLY_PROPERTIES = {
 	"Enabled",
+	"IsVertical",
+	"Thickness",
 }
 
 type SeparatorProperties = {
+	IsVertical: boolean?,
+	Thickness: number?,
 	Enabled: (boolean | types.StateObject<boolean>)?,
 	[any]: any,
 }
 
 return function(props: SeparatorProperties): Frame
 	local isEnabled = getState(props.Enabled, true)
+	local isVertical = props.IsVertical
+	local thickness = props.Thickness
 
 	local mainModifier = getModifier({
 		Enabled = isEnabled,
 	})
 
-	local newSeparator = New "Frame" {
+	local newSeparator = New("Frame")({
 		Name = "Separator",
-		Size = UDim2.new(1, 0, 0, 2),
+		Size = UDim2.new(
+			isVertical and 0 or 1,
+			isVertical and (thickness or 2) or 0,
+			isVertical and 1 or 0,
+			isVertical and 0 or (thickness or 2)
+		),
 		Position = UDim2.fromScale(0, 0),
 		AnchorPoint = Vector2.new(0, 0),
 		BackgroundColor3 = getMotionState(
 			themeProvider:GetColor(Enum.StudioStyleGuideColor.Light, mainModifier),
-			"Spring", 40
+			"Spring",
+			40
 		),
 		BorderSizePixel = 0,
-	}
+	})
 
 	local hydrateProps = stripProps(props, COMPONENT_ONLY_PROPERTIES)
 	return Hydrate(newSeparator)(hydrateProps)
-end]]></ProtectedString>
+end
+]]></ProtectedString>
 							<string name="ScriptGuid">{E1BA1388-0701-4113-8A12-AAFF7EBE3228}</string>
 							<BinaryString name="AttributesSerialize"></BinaryString>
 							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
@@ -86718,6 +88387,197 @@ end]]></ProtectedString>
 							<int64 name="SourceAssetId">-1</int64>
 							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
 							<UniqueId name="UniqueId">208221cc9007a4bd0a8e571c000040b8</UniqueId>
+						</Properties>
+					</Item>
+					<Item class="ModuleScript" referent="RBX26D04D883E4C41DDBB5963D99A4B0D58">
+						<Properties>
+							<Content name="LinkedSource"><null></null></Content>
+							<ProtectedString name="Source"><![CDATA[-- Roact version by @sircfenner
+-- Ported to Fusion by @YasuYoshida
+
+local Plugin = script:FindFirstAncestorWhichIsA("Plugin")
+local Fusion = require(Plugin:FindFirstChild("Fusion", true))
+
+local StudioComponents = script.Parent
+local StudioComponentsUtil = StudioComponents:FindFirstChild("Util")
+
+local BoxBorder = require(StudioComponents.BoxBorder)
+
+local getMotionState = require(StudioComponentsUtil.getMotionState)
+local themeProvider = require(StudioComponentsUtil.themeProvider)
+local getModifier = require(StudioComponentsUtil.getModifier)
+local constants = require(StudioComponentsUtil.constants)
+local getState = require(StudioComponentsUtil.getState)
+local unwrap = require(StudioComponentsUtil.unwrap)
+local types = require(StudioComponentsUtil.types)
+
+local New = Fusion.New
+local Value = Fusion.Value
+local OnEvent = Fusion.OnEvent
+local Computed = Fusion.Computed
+local Children = Fusion.Children
+local Hydrate = Fusion.Hydrate
+
+local INDICATOR_IMAGE = "rbxassetid://6652838434"
+local COMPONENT_ONLY_PROPERTIES = {
+	"OnChange",
+	"Enabled",
+	"Value",
+	"Text",
+	"Alignment",
+}
+
+type CheckboxProperties = {
+	OnChange: ((newValue: boolean) -> nil)?,
+	Enabled: (boolean | types.StateObject<boolean>)?,
+	Value: (boolean | types.Value<boolean>)?,
+	[any]: any,
+}
+
+return function(props: CheckboxProperties): Frame
+	local currentValue = getState(props.Value, true)
+	local isEnabled = getState(props.Enabled, true)
+	local isHovering = Value(false)
+
+	local isIndeterminate = Computed(function()
+		return unwrap(currentValue) == nil
+	end)
+
+	local mainModifier = getModifier({
+		Enabled = isEnabled,
+		Hovering = isHovering,
+	})
+
+	local backModifier = getModifier({
+		Enabled = isEnabled,
+		Selected = currentValue,
+	})
+
+	local checkFieldIndicatorColor =
+		themeProvider:GetColor(Enum.StudioStyleGuideColor.CheckedFieldIndicator, mainModifier)
+
+	local newCheckboxFrame = New("Frame")({
+		Name = "Checkbox",
+		Size = UDim2.fromOffset(15, 15),
+		BackgroundTransparency = 1,
+
+		[Children] = {
+			New("TextButton")({
+				Text = "",
+				Active = true,
+				Name = "CheckBoxInput",
+				Size = UDim2.fromScale(1, 1),
+				BackgroundTransparency = 1,
+
+				[OnEvent("InputBegan")] = function(inputObject)
+					if not unwrap(isEnabled) then
+						return
+					elseif inputObject.UserInputType == Enum.UserInputType.MouseMovement then
+						isHovering:set(true)
+					end
+				end,
+				[OnEvent("InputEnded")] = function(inputObject)
+					if not unwrap(isEnabled) then
+						return
+					elseif inputObject.UserInputType == Enum.UserInputType.MouseMovement then
+						isHovering:set(false)
+					end
+				end,
+				[OnEvent("Activated")] = function()
+					if unwrap(isEnabled) then
+						local newValue = not unwrap(currentValue, false)
+						currentValue:set(newValue)
+						if props.OnChange then
+							props.OnChange(newValue)
+						end
+					end
+				end,
+			}),
+			BoxBorder({
+				Color = getMotionState(
+					themeProvider:GetColor(
+						Enum.StudioStyleGuideColor.CheckedFieldBorder,
+						mainModifier
+					),
+					"Spring",
+					40
+				),
+
+				[Children] = New("Frame")({
+					Name = "Box",
+					BackgroundColor3 = getMotionState(
+						themeProvider:GetColor(
+							Enum.StudioStyleGuideColor.CheckedFieldBackground,
+							backModifier
+						),
+						"Spring",
+						40
+					),
+					Size = UDim2.fromOffset(15, 15),
+
+					[Children] = New("ImageLabel")({
+						AnchorPoint = Vector2.new(0.5, 0.5),
+						Visible = Computed(function()
+							return unwrap(currentValue) ~= false
+						end),
+						Name = "Indicator",
+						BackgroundTransparency = 1,
+						Size = UDim2.fromOffset(13, 13),
+						Position = UDim2.fromScale(0.5, 0.5),
+						Image = INDICATOR_IMAGE,
+						ImageRectSize = Vector2.new(13, 13),
+
+						ImageColor3 = getMotionState(
+							Computed(function()
+								local indicatorColor = unwrap(checkFieldIndicatorColor)
+								return if unwrap(isIndeterminate)
+									then Color3.fromRGB(255, 255, 255)
+									else indicatorColor
+							end),
+							"Spring",
+							40
+						),
+
+						ImageRectOffset = Computed(function()
+							if unwrap(isIndeterminate) then
+								return if unwrap(themeProvider.IsDark)
+									then Vector2.new(13, 0)
+									else Vector2.new(26, 0)
+							end
+							return Vector2.new(0, 0)
+						end),
+
+						[Children] = Computed(function()
+							local useCurvedBoxes = unwrap(constants.CurvedBoxes)
+							if useCurvedBoxes then
+								return New("UICorner")({
+									CornerRadius = constants.CornerRadius,
+								})
+							end
+						end, Fusion.cleanup),
+					}),
+				}),
+			}),
+		},
+	})
+
+	local hydrateProps = table.clone(props)
+	for _, propertyIndex in pairs(COMPONENT_ONLY_PROPERTIES) do
+		hydrateProps[propertyIndex] = nil
+	end
+
+	return Hydrate(newCheckboxFrame)(hydrateProps)
+end
+]]></ProtectedString>
+							<string name="ScriptGuid">{2A84EBD0-5157-41B9-91F1-9D502CAA10D2}</string>
+							<BinaryString name="AttributesSerialize"></BinaryString>
+							<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+							<bool name="DefinesCapabilities">false</bool>
+							<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+							<string name="Name">PlainCheckbox</string>
+							<int64 name="SourceAssetId">-1</int64>
+							<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+							<UniqueId name="UniqueId">2ef95d7ccf7b58190a90c42800003e51</UniqueId>
 						</Properties>
 					</Item>
 				</Item>
@@ -98344,9 +100204,23 @@ end
 			</Item>
 		</Item>
 	</Item>
+	<Item class="ServiceVisibilityService" referent="RBX646AF2084AA4488DAA6B7B0DCB779F75">
+		<Properties>
+			<BinaryString name="HiddenServices">AAAAAA==</BinaryString>
+			<BinaryString name="VisibleServices">AAAAAA==</BinaryString>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">ServiceVisibilityService</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+			<UniqueId name="UniqueId">6b82b1954e6d52ef0a78c589000003ae</UniqueId>
+		</Properties>
+	</Item>
 	<Item class="HttpService" referent="RBX7D30A6AD037C4A8485BE5E97977EA4DB">
 		<Properties>
-			<bool name="HttpEnabled">false</bool>
+			<bool name="HttpEnabled">true</bool>
 			<BinaryString name="AttributesSerialize"></BinaryString>
 			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
 			<bool name="DefinesCapabilities">false</bool>
@@ -98550,6 +100424,18 @@ return {
 			<int64 name="SourceAssetId">-1</int64>
 			<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
 			<UniqueId name="UniqueId">6b82b1954e6d52ef0a78c58900000745</UniqueId>
+		</Properties>
+	</Item>
+	<Item class="Preloaded" referent="RBXA3A86CE46C054E5B8CE2D3554DD9C2AE">
+		<Properties>
+			<BinaryString name="AttributesSerialize"></BinaryString>
+			<SecurityCapabilities name="Capabilities">0</SecurityCapabilities>
+			<bool name="DefinesCapabilities">false</bool>
+			<UniqueId name="HistoryId">00000000000000000000000000000000</UniqueId>
+			<string name="Name">Preloaded</string>
+			<int64 name="SourceAssetId">-1</int64>
+			<SharedString name="Tags">yuZpQdnvvUBOTYh1jqZ2cA==</SharedString>
+			<UniqueId name="UniqueId">13dc61f826c405520a8fae5400003dd8</UniqueId>
 		</Properties>
 	</Item>
 	<SharedStrings>

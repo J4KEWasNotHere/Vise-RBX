@@ -18,31 +18,43 @@ local Hydrate = Fusion.Hydrate
 
 local COMPONENT_ONLY_PROPERTIES = {
 	"Enabled",
+	"IsVertical",
+	"Thickness",
 }
 
 type SeparatorProperties = {
+	IsVertical: boolean?,
+	Thickness: number?,
 	Enabled: (boolean | types.StateObject<boolean>)?,
 	[any]: any,
 }
 
 return function(props: SeparatorProperties): Frame
 	local isEnabled = getState(props.Enabled, true)
+	local isVertical = props.IsVertical
+	local thickness = props.Thickness
 
 	local mainModifier = getModifier({
 		Enabled = isEnabled,
 	})
 
-	local newSeparator = New "Frame" {
+	local newSeparator = New("Frame")({
 		Name = "Separator",
-		Size = UDim2.new(1, 0, 0, 2),
+		Size = UDim2.new(
+			isVertical and 0 or 1,
+			isVertical and (thickness or 2) or 0,
+			isVertical and 1 or 0,
+			isVertical and 0 or (thickness or 2)
+		),
 		Position = UDim2.fromScale(0, 0),
 		AnchorPoint = Vector2.new(0, 0),
 		BackgroundColor3 = getMotionState(
 			themeProvider:GetColor(Enum.StudioStyleGuideColor.Light, mainModifier),
-			"Spring", 40
+			"Spring",
+			40
 		),
 		BorderSizePixel = 0,
-	}
+	})
 
 	local hydrateProps = stripProps(props, COMPONENT_ONLY_PROPERTIES)
 	return Hydrate(newSeparator)(hydrateProps)

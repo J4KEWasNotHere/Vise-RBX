@@ -4,6 +4,7 @@ local LocalizationService = game:GetService("LocalizationService")
 
 -- Context
 local Widget = require("../../Components/PluginComponents/Widget")
+local BoxBorder = require("../../Components/StudioComponents/BoxBorder")
 
 local Checkbox = require("../../Components/StudioComponents/Checkbox")
 local MainButton = require("../../Components/StudioComponents/MainButton")
@@ -20,8 +21,10 @@ local Loading = require("../../Components/StudioComponents/Loading")
 local ClassIcon = require("../../Components/StudioComponents/ClassIcon")
 local IconButton = require("../../Components/StudioComponents/IconButton")
 local LimitedTextInput = require("../../Components/StudioComponents/LimitedTextInput")
+local PlainCheckbox = require("../../Components/StudioComponents/PlainCheckbox")
 local ProgressBar = require("../../Components/StudioComponents/ProgressBar")
 local Slider = require("../../Components/StudioComponents/Slider")
+local PlainCheckbox = require("../../Components/StudioComponents/PlainCheckbox")
 
 local Fusion = require("../../Packages/_Index/elttob_fusion@0.2.0/fusion") -- explict
 local New = Fusion.New
@@ -36,33 +39,53 @@ local Cleanup = Fusion.Cleanup
 local cleanup = Fusion.cleanup
 
 local unwrap = require("../../Components/StudioComponents/Util/unwrap")
+local themeProvider = require("../../Components/StudioComponents/Util/themeProvider")
 
 local function makeCard(props)
 	local y: NumberRange? = props.YScaling
 	local padding = props.Padding or 10
+	local layout = props.NoLayout and {}
+		or New("UIListLayout")({
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 8),
+		})
+	local size = props.Size
+	local border = props.UseBorder
+			and New("UIStroke")({
+				Thickness = 1,
+				Color = props.BorderColor
+					or themeProvider:GetColor(Enum.StudioStyleGuideColor.Border),
+				Transparency = props.Transparency,
+			})
+		or {}
+
+	local sizeconstraint = props.DontConstrain and {}
+		or New("UISizeConstraint")({
+			MaxSize = Vector2.new(9999, y and y.Max or 9999),
+			MinSize = Vector2.new(0, y and y.Min or 0),
+		})
+
+	local corner = props.CornerRadius or 2
+	local color = props.Color or Color3.fromRGB(0, 0, 0)
 
 	return New("Frame")({
-		Size = UDim2.fromScale(1, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = size or UDim2.fromScale(1, 0),
+		AutomaticSize = size and Enum.AutomaticSize.None or Enum.AutomaticSize.Y,
 		BackgroundTransparency = props.Transparency or 0.7,
-		BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+		BackgroundColor3 = color,
 		BorderSizePixel = 0,
 		[Children] = {
-			New("UICorner")({ CornerRadius = UDim.new(0, 8) }),
+			border,
+			New("UICorner")({ CornerRadius = UDim.new(0, corner) }),
 			New("UIPadding")({
-				PaddingLeft = UDim.new(0, props.XPadding or padding),
+				PaddingLeft = UDim.new(0, props.PaddingLeft or props.XPadding or padding),
 				PaddingRight = UDim.new(0, props.XPadding or padding),
 				PaddingTop = UDim.new(0, props.YPadding or padding),
 				PaddingBottom = UDim.new(0, props.YPadding or padding),
 			}),
-			New("UIListLayout")({
-				SortOrder = Enum.SortOrder.LayoutOrder,
-				Padding = UDim.new(0, 8),
-			}),
-			New("UISizeConstraint")({
-				MaxSize = Vector2.new(9999, y and y.Max or 9999),
-				MinSize = Vector2.new(0, y and y.Min or 0),
-			}),
+			layout,
+
+			sizeconstraint,
 			props.Children,
 		},
 	})
@@ -82,6 +105,10 @@ local ctx = {
 		Cleanup = Cleanup,
 		cleanup = cleanup,
 		unwrap = unwrap,
+	},
+
+	util = {
+		themeProvider = themeProvider,
 	},
 
 	studio = {
@@ -125,6 +152,7 @@ local ctx = {
 	},
 
 	components = {
+		PlainCheckbox = PlainCheckbox,
 		Checkbox = Checkbox,
 		MainButton = MainButton,
 		ScrollFrame = ScrollFrame,
@@ -144,14 +172,19 @@ local ctx = {
 	},
 
 	ui = {
-		Collapsible = function(props)
+		makeCollapsible = function(props)
 			return makeCard({
+				UseBorder = true,
 				Padding = 0,
+				Transparency = 0,
+				Color = themeProvider:GetColor(Enum.StudioStyleGuideColor.MainBackground),
+				BorderColor = themeProvider:GetColor(Enum.StudioStyleGuideColor.Light),
 
 				Children = VerticalCollapsibleSection({
 					Text = props.Text,
 					Collapsed = props.Collapsed,
 					Enabled = props.Enabled,
+
 					Padding = UDim.new(0, props.Padding or 4),
 
 					[Children] = makeCard({

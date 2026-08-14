@@ -1,4 +1,5 @@
-local unwrap = require("../../Components/StudioComponents/Util/unwrap")
+local Project = require("../Project")
+local Renderer = require("../Renderer")
 local Constants = require("../external/Constants")
 local Types = require("../external/Types")
 
@@ -24,6 +25,7 @@ function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 	local Hydrate = ctx.fusion.Hydrate
 	local Computed = ctx.fusion.Computed
 	local unwrap = ctx.fusion.unwrap
+	local themeProvider = ctx.util.themeProvider
 
 	local Children = ctx.fusion.Children
 	local OnChange = ctx.fusion.OnChange
@@ -39,10 +41,14 @@ function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 	local Checkbox = ctx.components.Checkbox
 	local Seperator = ctx.components.Seperator
 	local Loading = ctx.components.Loading
+	local LimitedTextInput = ctx.components.LimitedTextInput
+	local Paragraph = ctx.components.Paragraph
 	local VerticalCollapsibleSection = ctx.components.VerticalCollapsibleSection
 	local ScrollFrame = ctx.components.ScrollFrame
+	local PlainCheckbox = ctx.components.PlainCheckbox
 	local makeCard = ctx.ui.makeCard
 	local makeSectionHeader = ctx.ui.makeSectionHeader
+	local makeCollapsible = ctx.ui.makeCollapsible
 
 	local Widget = ctx.studio.Widget
 	local AddWidget = ctx.studio.AddWidget
@@ -55,6 +61,8 @@ function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 	local mousePosStart = nil
 	local dragStartSize = Vector2.new(256, 256)
 	local offsetFunc = nil
+
+	Project = Project.new()
 
 	-- States
 	local widgetsEnabled = Value(false)
@@ -266,22 +274,52 @@ function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 	MainGui.Parent = CoreGui
 	viewportChanged()
 
-	local Collapsible = function(props)
+	local function HorizontalSection(props)
 		return makeCard({
-			Padding = 0,
-
-			Children = VerticalCollapsibleSection({
-				Text = props.Text,
-				Collapsed = props.Collapsed,
-				Enabled = props.Enabled,
-				Padding = UDim.new(0, props.Padding or 4),
-
-				[Children] = makeCard({
-					Transparency = 1,
-					Padding = props.Padding or 4,
-					Children = props.Children,
+			Padding = 3,
+			PaddingLeft = 8,
+			Size = UDim2.new(1, 0, 0, props.Height or 28),
+			NoLayout = true,
+			--DontConstrain = true,
+			YScaling = NumberRange.new(28, 9999),
+			UseBorder = true,
+			Transparency = 0,
+			CornerRadius = 2,
+			Color = themeProvider:GetColor(Enum.StudioStyleGuideColor.MainBackground),
+			Children = {
+				New("UIListLayout")({
+					FillDirection = Enum.FillDirection.Horizontal,
+					Padding = UDim.new(0, 4),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+					HorizontalAlignment = Enum.HorizontalAlignment.Center,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
 				}),
-			}),
+
+				props.Children,
+			},
+		})
+	end
+
+	local function PropertySection(props)
+		return HorizontalSection({
+			Height = props.Height,
+			Scaled = props.Scaled,
+
+			Children = {
+				Label({
+					Text = props.Title or "Title",
+					FontFace = props.FontFace
+						or Font.fromName("SourceSans", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+					TextXAlignment = Enum.TextXAlignment.Left,
+					TextTruncate = Enum.TextTruncate.SplitWord,
+					NoScaling = true,
+					Size = UDim2.fromScale(0.5, 1),
+				}),
+
+				Seperator({ IsVertical = true, Thickness = 1 }),
+
+				props.Children,
+			},
 		})
 	end
 
@@ -295,11 +333,109 @@ function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 		ScrollingEnabled = true,
 
 		Children = { -- do not replace with [Children]
-			Collapsible({
+			makeCollapsible({
 				Text = "Camera Configurations",
 				Collapsed = true,
 				Children = { -- do not replace with [Children]
-					--
+					Checkbox({
+						Text = "Render Skybox",
+						Enabled = true,
+						Value = false,
+						OnChange = function(value) end,
+					}),
+
+					Seperator({}),
+
+					PropertySection({
+						Title = "Property Title",
+
+						Children = {
+							TextInput({
+								PlaceholderText = "Placeholder Text",
+								Text = "",
+
+								Size = UDim2.fromScale(1, 1),
+								[OnChange("Text")] = function(newText)
+									print("Text:", newText)
+								end,
+
+								[Children] = {
+									New("UIFlexItem")({
+										FlexMode = Enum.UIFlexMode.Fill,
+									}),
+								},
+							}),
+						},
+					}),
+
+					PropertySection({
+						Title = "Property Title",
+
+						Children = {
+							PlainCheckbox({
+
+								[Children] = {
+									New("UIFlexItem")({
+										FlexMode = Enum.UIFlexMode.Fill,
+									}),
+								},
+							}),
+						},
+					}),
+
+					MainButton({
+						Text = "Capture",
+						Activated = function()
+							print("[Vise] Capturing image...")
+
+							local selectedShaders = {
+								{
+									id = "grayscale",
+									path = script.Parent.Parent.files.shaders.Grayscale,
+								},
+							}
+
+							local position = Camera and Camera.CFrame and Camera.CFrame.Position
+								or Vector3.zero
+							local captureFuture = Renderer.captureImage(captureSize:get(), position)
+
+							local success, imageData = pcall(function()
+								return captureFuture:expect()
+							end)
+
+							if success and imageData and not imageData.error then
+								local imageId = Project:createImage(imageData)
+
+								-- Attach shaders to the image we just created
+								for _, shaderEntry in ipairs(selectedShaders) do
+									if shaderEntry.module then
+										-- Already-required module
+										Project:addShader(shaderEntry.id, shaderEntry.module)
+									elseif shaderEntry.path then
+										-- Path to require at load time
+										Project:addShaderFromPath(shaderEntry.id, shaderEntry.path)
+									end
+								end
+
+								Project:applyCurrentImageToWorkspace()
+								print("[Vise] Capture complete!", imageId)
+								return
+							end
+
+							warn(
+								"[Vise] Capture failed:",
+								success and imageData and imageData.error or "unknown error"
+							)
+							local fallbackId = Project:createImage({
+								size = captureSize:get(),
+								position = position,
+								timestamp = os.time(),
+								source = "fallback",
+							})
+							Project:applyCurrentImageToWorkspace()
+							print("[Vise] Capture fallback applied!", fallbackId)
+						end,
+					}),
 				},
 			}),
 		},
