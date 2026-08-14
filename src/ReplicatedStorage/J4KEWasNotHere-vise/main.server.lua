@@ -5,7 +5,6 @@
 ]]
 
 -- Services
-local Preloaded = game:GetService("Preloaded")
 local RunService = game:GetService("RunService")
 
 -- Setup
@@ -49,18 +48,6 @@ const ToBind = {
 
 local Binded = {}
 
--- function Editor:performCapture()
--- 	print("[Vise] Capturing image...")
--- 	-- In a real plugin, this would capture the viewport
--- 	-- For now, create a dummy capture
--- 	local imageData = {
--- 		size = self.captureFrame:getSize(),
--- 		timestamp = os.time(),
--- 	}
--- 	self.project:createImage(imageData)
--- 	print("[Vise] Capture complete!")
--- end
-
 -- Utility
 
 local function resolvePath(path, data)
@@ -87,8 +74,6 @@ local function Cleanup()
 	for _, data in ipairs(Binded) do
 		data.cleanup()
 	end
-
-	print("--- CLEANED UP ---")
 end
 
 -- Initialize
@@ -97,8 +82,6 @@ plugin.Unloading:Connect(Cleanup)
 if cleanedUp then
 	return
 end
-
-print("--- STARTING PLUGIN ---")
 
 if RunService:IsStudio() and RunService:IsEdit() then
 	for i, data in ipairs(ToBind) do
@@ -114,13 +97,9 @@ if RunService:IsStudio() and RunService:IsEdit() then
 			continue -- if no cleanup is needed, just skip..
 		end
 
-		print(`Binded with cleanup at index {i}.`)
-
 		Binded[i] = {
 			bind = bind,
 			cleanup = cleanupFunc,
 		}
 	end
-
-	print("--- PLUGIN STARTED! --")
 end

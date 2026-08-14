@@ -211,27 +211,27 @@ gcLgc4RKxr21zq2UlJSM]]></BinaryString>
 		<Item class="Camera" referent="RBXFC9863C51DB849D8AA03017471323F19">
 			<Properties>
 				<CoordinateFrame name="CFrame">
-					<X>-0.43757093</X>
-					<Y>18.4156761</Y>
-					<Z>-21.4836121</Z>
-					<R00>-0.90972352</R00>
-					<R01>-0.0541414693</R01>
-					<R02>0.411669493</R02>
+					<X>-0.26685968</X>
+					<Y>19.642437</Y>
+					<Z>-24.4366322</Z>
+					<R00>-0.981157005</R00>
+					<R01>-0.0212147366</R01>
+					<R02>0.192043871</R02>
 					<R10>-0</R10>
-					<R11>0.991462231</R11>
-					<R12>0.130393982</R12>
-					<R20>-0.415214479</R20>
-					<R21>0.118622474</R21>
-					<R22>-0.901956558</R22>
+					<R11>0.993953645</R11>
+					<R12>0.109800249</R12>
+					<R20>-0.193212092</R20>
+					<R21>0.107731283</R21>
+					<R22>-0.975224614</R22>
 				</CoordinateFrame>
 				<Ref name="CameraSubject">null</Ref>
 				<token name="CameraType">0</token>
 				<float name="FieldOfView">70</float>
 				<token name="FieldOfViewMode">0</token>
 				<CoordinateFrame name="Focus">
-					<X>-1.26090991</X>
-					<Y>18.1548882</Y>
-					<Z>-19.6796989</Z>
+					<X>-0.65094775</X>
+					<Y>19.4228363</Y>
+					<Z>-22.4861813</Z>
 					<R00>1</R00>
 					<R01>0</R01>
 					<R02>0</R02>
@@ -65336,9 +65336,9 @@ end
 	Handles project save/load for captured images and their shader data
 ]]
 
-local AssetService = game.AssetService
-
+local AssetService = game:GetService("AssetService") :: AssetService
 local Image = require(script.Parent.Image)
+local ShaderApplier = require(script.Parent.ShaderApplier)
 local Project = {}
 Project.__index = Project
 
@@ -65363,7 +65363,7 @@ end
 
 function Project.new()
 	local self = setmetatable({}, Project)
-	self.images = {} -- {id = {data = imageData, image = Image, shaders = {...}}}
+	self.images = {}
 	self.currentImage = nil
 	return self
 end
@@ -65377,9 +65377,6 @@ function Project:createImage(imageData)
 		local crop = imageData.size and computeCenteredCrop(fullSize, imageData.size) or nil
 
 		img = Image.fromEditableImage(imageData.editableImage, crop)
-		if imageData.contentUri then
-			img:SetTemplateUri(imageData.contentUri)
-		end
 
 		pcall(function()
 			imageData.editableImage:Destroy()
@@ -65411,23 +65408,19 @@ function Project:_buildShadedImage()
 		return nil
 	end
 
-	-- Clone so shaders never mutate the stored original
 	local result = image.image:Clone()
 
 	for _, shaderEntry in ipairs(image.shaders) do
-		local shaderModule = shaderEntry.module
-		if shaderModule and shaderModule.apply then
-			local ok, shaded = pcall(shaderModule.apply, result)
-			if ok and shaded then
-				result = shaded
-			else
-				warn(
-					("Shader '%s' failed to apply: %s"):format(
-						tostring(shaderEntry.id),
-						tostring(shaded)
-					)
+		local ok, shadedOrErr = pcall(ShaderApplier.applyShader, result, shaderEntry.module)
+		if ok then
+			result = shadedOrErr
+		else
+			warn(
+				("Shader '%s' failed to apply: %s"):format(
+					tostring(shaderEntry.id),
+					tostring(shadedOrErr)
 				)
-			end
+			)
 		end
 	end
 
@@ -65445,14 +65438,17 @@ function Project:applyCurrentImageToWorkspace()
 		return nil
 	end
 
-	-- Build/refresh the EditableImage from the (possibly shaded) pixel buffer
+	if shadedImage.size.X <= 0 or shadedImage.size.Y <= 0 then
+		warn("Cannot render image with zero size")
+		return nil
+	end
+
 	local editableImage = AssetService:CreateEditableImage({ Size = shadedImage.size })
 	if not editableImage then
 		return nil
 	end
 	editableImage:WritePixelsBuffer(Vector2.zero, shadedImage.size, shadedImage.buffer)
 
-	-- Surface part to host the image
 	local surface = workspace:FindFirstChild("ViseCapturePlane") or Instance.new("Part")
 	surface.Name = "ViseCapturePlane"
 	surface.Anchored = true
@@ -65465,12 +65461,11 @@ function Project:applyCurrentImageToWorkspace()
 		* CFrame.new(0, 0, -5)
 	surface.Parent = workspace
 
-	-- SurfaceGui + ImageLabel is the supported way to render an EditableImage
 	local surfaceGui = surface:FindFirstChild("ViseCaptureGui") :: SurfaceGui?
 	if not surfaceGui then
 		surfaceGui = Instance.new("SurfaceGui")
 		surfaceGui.Name = "ViseCaptureGui"
-		surfaceGui.Face = Enum.NormalId.Back
+		surfaceGui.Face = Enum.NormalId.Front
 		surfaceGui.Parent = surface
 	end
 
@@ -65485,7 +65480,6 @@ function Project:applyCurrentImageToWorkspace()
 
 	imageLabel.ImageContent = Content.fromObject(editableImage)
 
-	-- Stash a reference so we can Destroy() the old one before regenerating next time
 	if image.editableImage then
 		pcall(function()
 			image.editableImage:Destroy()
@@ -65496,11 +65490,37 @@ function Project:applyCurrentImageToWorkspace()
 	return imageLabel
 end
 
+-- Load a shader module from a path and attach it to the current image
+function Project:addShaderFromPath(shaderId, modulePath)
+	local image = self:getCurrentImage()
+	if not image then
+		return
+	end
+
+	local ok, shaderOrErr = pcall(ShaderApplier.loadShader, modulePath)
+	if not ok then
+		warn(("Failed to load shader '%s': %s"):format(tostring(shaderId), tostring(shaderOrErr)))
+		return
+	end
+
+	table.insert(image.shaders, {
+		id = shaderId,
+		module = shaderOrErr,
+	})
+end
+
+-- Attach an already-required shader module directly
 function Project:addShader(shaderId, shaderModule)
 	local image = self:getCurrentImage()
 	if not image then
 		return
 	end
+
+	if not shaderModule or type(shaderModule.apply) ~= "function" then
+		warn(("Shader '%s' does not export a valid apply function"):format(tostring(shaderId)))
+		return
+	end
+
 	table.insert(image.shaders, {
 		id = shaderId,
 		module = shaderModule,
@@ -66079,6 +66099,13 @@ function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 						Activated = function()
 							print("[Vise] Capturing image...")
 
+							local selectedShaders = {
+								{
+									id = "grayscale",
+									path = script.Parent.Parent.files.shaders.Grayscale,
+								},
+							}
+
 							local position = Camera and Camera.CFrame and Camera.CFrame.Position
 								or Vector3.zero
 							local captureFuture = Renderer.captureImage(captureSize:get(), position)
@@ -66089,6 +66116,18 @@ function CaptureWidget:Bind(_, toolbarButton, pluginRoot, pluginInstance)
 
 							if success and imageData and not imageData.error then
 								local imageId = Project:createImage(imageData)
+
+								-- Attach shaders to the image we just created
+								for _, shaderEntry in ipairs(selectedShaders) do
+									if shaderEntry.module then
+										-- Already-required module
+										Project:addShader(shaderEntry.id, shaderEntry.module)
+									elseif shaderEntry.path then
+										-- Path to require at load time
+										Project:addShaderFromPath(shaderEntry.id, shaderEntry.path)
+									end
+								end
+
 								Project:applyCurrentImageToWorkspace()
 								print("[Vise] Capture complete!", imageId)
 								return
@@ -66427,11 +66466,31 @@ return BlurShader
 
 local GrayscaleShader = {}
 
+-- Standard luma weights (Rec. 601) — matches how most image tools compute
+-- grayscale from RGB, weighting green heaviest since the eye is most
+-- sensitive to it.
+local R_WEIGHT = 0.299
+local G_WEIGHT = 0.587
+local B_WEIGHT = 0.114
+
 function GrayscaleShader.apply(imageData)
-	-- In a real implementation, this would process pixel data
-	local result = imageData
-	result.filter = "grayscale"
-	result.applied_shader = "GrayscaleShader"
+	local result = imageData:Clone()
+
+	local width = result:GetWidth()
+	local height = result:GetHeight()
+
+	for x = 1, width do
+		for y = 1, height do
+			local pixelIndex = result:GetPixelIndex(x, y)
+			local r, g, b, a = result:GetRGBA255(pixelIndex)
+
+			local luma = math.floor(r * R_WEIGHT + g * G_WEIGHT + b * B_WEIGHT + 0.5)
+			luma = math.clamp(luma, 0, 255)
+
+			result:SetRGBA255(pixelIndex, luma, luma, luma, a)
+		end
+	end
+
 	return result
 end
 
@@ -83480,7 +83539,6 @@ return xtypeof]]></ProtectedString>
 ]]
 
 -- Services
-local Preloaded = game:GetService("Preloaded")
 local RunService = game:GetService("RunService")
 
 -- Setup
@@ -83524,18 +83582,6 @@ const ToBind = {
 
 local Binded = {}
 
--- function Editor:performCapture()
--- 	print("[Vise] Capturing image...")
--- 	-- In a real plugin, this would capture the viewport
--- 	-- For now, create a dummy capture
--- 	local imageData = {
--- 		size = self.captureFrame:getSize(),
--- 		timestamp = os.time(),
--- 	}
--- 	self.project:createImage(imageData)
--- 	print("[Vise] Capture complete!")
--- end
-
 -- Utility
 
 local function resolvePath(path, data)
@@ -83562,8 +83608,6 @@ local function Cleanup()
 	for _, data in ipairs(Binded) do
 		data.cleanup()
 	end
-
-	print("--- CLEANED UP ---")
 end
 
 -- Initialize
@@ -83572,8 +83616,6 @@ plugin.Unloading:Connect(Cleanup)
 if cleanedUp then
 	return
 end
-
-print("--- STARTING PLUGIN ---")
 
 if RunService:IsStudio() and RunService:IsEdit() then
 	for i, data in ipairs(ToBind) do
@@ -83589,15 +83631,11 @@ if RunService:IsStudio() and RunService:IsEdit() then
 			continue -- if no cleanup is needed, just skip..
 		end
 
-		print(`Binded with cleanup at index {i}.`)
-
 		Binded[i] = {
 			bind = bind,
 			cleanup = cleanupFunc,
 		}
 	end
-
-	print("--- PLUGIN STARTED! --")
 end
 ]]></ProtectedString>
 					<bool name="Disabled">false</bool>
